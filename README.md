@@ -1,5 +1,8 @@
 # 5190-practice
 
+[![validate](https://github.com/causius0/5190-practice/actions/workflows/validate.yml/badge.svg)](https://github.com/causius0/5190-practice/actions/workflows/validate.yml)
+[![Live](https://img.shields.io/badge/live-5190--practice.vercel.app-1f7a5c)](https://5190-practice.vercel.app)
+
 Interactive backpropagation practice — 10 exercises that walk you from a single product-and-square up to a mini-batch with shared parameters. Built as practice for CIS 5190 (Applied Machine Learning).
 
 **Live: https://5190-practice.vercel.app**
