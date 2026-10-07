@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Backward pass practice — 10 exercises</title>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fbfbfd;--ink:#14213d;--mut:#5b6478;--line:#cfd4e1;--acc:#14275a;--bad:#a4281f;--ok:#1f7a5c;--card:#fff;--wash:#eef0f6;--fwd:#1f7a73}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1322;--ink:#e8ebf5;--mut:#9aa3ba;--line:#2a3350;--acc:#9db4ff;--bad:#ff8a80;--ok:#6fd6ae;--card:#151c30;--wash:#1b2440;--fwd:#6fd0c6}}
+:root[data-theme="dark"]{--bg:#0e1322;--ink:#e8ebf5;--mut:#9aa3ba;--line:#2a3350;--acc:#9db4ff;--bad:#ff8a80;--ok:#6fd6ae;--card:#151c30;--wash:#1b2440;--fwd:#6fd0c6}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:19px/1.5 "EB Garamond",Georgia,serif;font-variant-numeric:tabular-nums}
+main{max-width:760px;margin:0 auto;padding:28px 18px 60px}
+h1{font-size:2rem;line-height:1.15;margin:0 0 6px;color:var(--acc)}
+h2{font-size:1.25rem;margin:0;color:var(--acc)}
+h3{font-size:1rem;margin:14px 0 6px;color:var(--mut);font-weight:600}
+.lede{color:var(--mut);margin:0 0 18px}
+.eq{font-size:1.35rem;background:var(--wash);padding:10px 14px;border-radius:6px;margin:0 0 10px;overflow-x:auto;white-space:nowrap}
+.vals{margin:0 0 22px;color:var(--fwd);font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 18px 16px;margin:0 0 14px}
+.card[inert]{opacity:.45}
+.card.done{border-color:var(--ok)}
+.sub{margin:2px 0 0;color:var(--fwd)}
+.sub b{color:var(--ink)}
+.row{display:flex;align-items:center;gap:10px;margin:6px 0}
+.row span{min-width:120px}
+small.tag{color:var(--mut);font-size:.72em;font-weight:400}
+input{width:84px;font:inherit;text-align:center;padding:3px 6px;border:1.5px solid var(--bad);border-radius:3px;background:var(--card);color:var(--ink)}
+input:focus-visible,button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+input.bad{background:color-mix(in srgb,var(--bad) 14%,transparent)}
+input.ok{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent)}
+button{font:inherit;font-weight:600;background:var(--acc);color:var(--bg);border:0;border-radius:4px;padding:4px 16px;cursor:pointer;margin-top:6px}
+button.ghost{background:none;color:var(--mut);text-decoration:underline;font-weight:400;padding:4px 8px}
+.fb{margin:6px 0 0;min-height:1.2em}
+.fb.bad{color:var(--bad)}.fb.ok{color:var(--ok)}
+#sum{display:none;border:1.5px solid var(--ok);border-radius:8px;padding:14px 18px}
+#sum.on{display:block}
+#sum .gi{font-size:1.15rem;margin:6px 0}
+#sum .note{color:var(--mut);margin:8px 0 0}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:0 0 8px;min-height:34px}
+.top .ghost{margin:0}
+#where{color:var(--mut)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:640px){.grid{grid-template-columns:1fr}}
+.excard{display:block;width:100%;text-align:left;font:inherit;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;color:var(--ink);cursor:pointer}
+.excard:hover{border-color:var(--acc)}
+.excard.done{border-color:var(--ok)}
+.excard .no{color:var(--mut);font-size:.9rem}
+.excard .nm{font-weight:700;font-size:1.05rem;margin:2px 0}
+.excard .eqs{font-size:1rem;margin:0 0 6px;color:var(--acc);white-space:nowrap;overflow-x:auto}
+.chip{display:inline-block;font-size:.72rem;border:1px solid var(--line);border-radius:99px;padding:0 8px;color:var(--mut);margin:0 4px 4px 0;white-space:nowrap}
+.tick{color:var(--ok);font-weight:700}
+.prog{color:var(--mut);margin:0 0 16px}
+.graph{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px 8px;margin:0 0 18px}
+.graph .cap{color:var(--mut);font-size:.85rem;margin:0 0 6px}
+.gbox{fill:var(--wash);stroke:var(--line);stroke-width:1.2}
+.gbox.cur{stroke:var(--acc);stroke-width:2.2}
+.gbox.gd{stroke:var(--ok);stroke-width:2;fill:color-mix(in srgb,var(--ok) 12%,var(--card))}
+.glab{font:600 13px "EB Garamond",Georgia,serif;fill:var(--ink)}
+.gvar{font:italic 600 15px "EB Garamond",Georgia,serif;fill:var(--fwd)}
+.gterm{font:700 17px "EB Garamond",Georgia,serif;fill:var(--acc)}
+.gedge{stroke:var(--line);stroke-width:1.4;fill:none}
+.gedgelab{font:italic 600 13px "EB Garamond",Georgia,serif;fill:var(--fwd)}
+.gdot{fill:var(--fwd)}
+.nav{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:14px}
+</style>
+</head>
+<body>
+<main>
+<div class="top"><button class="ghost" id="home" hidden>← All exercises</button><span id="where"></span></div>
+<div id="view"></div>
+</main>
+<noscript><p>This practice app needs JavaScript.</p></noscript>
+<script>
+//__DATA__
+const H={
+mul:'For a product, the local gradient with respect to one factor is the value of the other factor.',
+add:'Addition passes gradients straight through: nudge an input by 1 and the sum moves by 1.',
+sub:'The input being subtracted flips the sign of its local gradient; the other passes 1 through.',
+sq:'Differentiate the square: the local gradient is 2r, evaluated at the current r.',
+sig:'For a sigmoid, σ′(z) = σ(z)(1 − σ(z)) — the curve’s slope at z.',
+relu:'ReLU passes gradient 1 when its input is positive, 0 when it is negative.',
+recip:'The derivative of 1/t is −1/t².',
+half:'A constant multiplier slides straight into the derivative: d/dQ (Q/2) = ½.',
+bce:'For binary cross-entropy, ∂ℒ/∂p = −y/p + (1−y)/(1−p).',
+hinge:'max(0, q) routes gradient only when q > 0: local gradient 1 then, 0 otherwise.',
+up:'Upstream is ∇ℒ with respect to this node’s output: the downstream value handed back by the node to its right (an accumulated product, not one local gradient).',
+down:'Downstream = local × upstream.',
+branch:'This symbol also reaches ℒ through another path — this box is only this path’s share; the total gradient is the sum over paths.'};
+
+const EXS=[
+{id:1,title:'Warm-up — square a product',eq:'ℒ = (wx)²',chips:['×','²'],
+ sub:'The simplest full backward pass: one product, one square.',
+ vals:'w = 2, x = 3 → wx = 6, ℒ = 36',
+ note:'Check by hand: ℒ = w²x², so ∇_wℒ = 2wx² = 2·2·9 = 36 ✓ and ∇_xℒ = 2w²x = 2·4·3 = 24 ✓.',
+ N:[
+ {t:'Square — the loss',g:'²',f:'ℒ = q²',v:'q = 6 → ℒ = 36',o:'ℒ',U:1,y:'sq',i:[['q',12,'Differentiate q² to get 2q, then plug in q = 6: 2 × 6 = 12.']]},
+ {t:'Multiply',g:'×',f:'q = w·x',v:'(2)(3) = 6',o:'q',U:12,y:'mul',i:[['w',3,'The local gradient with respect to one factor is the other factor: here x = 3.'],['x',2,'The local gradient with respect to x is the other factor: w = 2.']]}
+]},
+
+{id:2,title:'Two-branch linear model',eq:'ℒ = (w₁x₁ + w₂x₂ + b − y)²',chips:['×','+','−','²'],
+ sub:'Your original exercise: two weighted inputs, a bias, a target.',
+ vals:'w₁ = 2, x₁ = 3, w₂ = −1, x₂ = 4, b = 1, y = −1 → ℒ = 16',
+ note:'Check by hand: ∇_w₁ℒ = 2r·x₁ = 2·4·3 = 24 ✓ and ∇_bℒ = 2r = 8 ✓. Every parameter gradient is 8 times the factor it multiplies, because the 8 travels unchanged through the add and subtract nodes.',
+ N:[
+ {t:'Square — the loss',g:'²',f:'ℒ = r²',v:'r = 4 → ℒ = 16',o:'ℒ',U:1,y:'sq',i:[['r',8,'Differentiate r² to get 2r, then plug in r = 4: 2 × 4 = 8.']]},
+ {t:'Subtract the target',g:'−',f:'r = ŷ − y',v:'ŷ = 3, y = −1 → r = 4',o:'r',U:8,y:'sub',i:[['ŷ',1,'Nudge ŷ by 1 and r moves by the same amount, same direction.'],['y',-1,'y enters with a minus sign, so r moves the opposite way: −1.']]},
+ {t:'Add bias',g:'+',f:'ŷ = s + b',v:'s = 2, b = 1 → ŷ = 3',o:'ŷ',U:8,y:'add',i:[['s',1,'Addition passes gradients straight through: +1.'],['b',1,'Addition passes gradients straight through: +1.']]},
+ {t:'Add the products',g:'+',f:'s = u₁ + u₂',v:'6 + (−4) = 2',o:'s',U:8,y:'add',i:[['u₁',1,'Addition passes gradients straight through: +1.'],['u₂',1,'Addition passes gradients straight through: +1.']]},
+ {t:'Multiply, branch 2',g:'×',f:'u₂ = w₂·x₂',v:'(−1)(4) = −4',o:'u₂',U:8,y:'mul',i:[['w₂',4,'Product rule: the local gradient with respect to w₂ is the other factor, x₂ = 4.'],['x₂',-1,'Product rule: the local gradient with respect to x₂ is the other factor, w₂ = −1.']]},
+ {t:'Multiply, branch 1',g:'×',f:'u₁ = w₁·x₁',v:'(2)(3) = 6',o:'u₁',U:8,y:'mul',i:[['w₁',3,'Product rule: the local gradient with respect to w₁ is the other factor, x₁ = 3.'],['x₁',2,'Product rule: the local gradient with respect to x₁ is the other factor, w₁ = 2.']]}
+]},
+
+{id:3,title:'Sigmoid, then squared error',eq:'ℒ = (σ(wx + b) − y)²',chips:['σ','²'],
+ sub:'First nonlinear gate: the sigmoid multiplies the flowing gradient by σ(1−σ).',
+ vals:'w = 1, x = 4, b = −4, y = 0 → z = 0, p = 0.5, ℒ = 0.25',
+ note:'Watch the gate: even though ∇_pℒ = 1, the sigmoid multiplies it by σ′ = 0.25 — big upstream signals shrink crossing a sigmoid.',
+ N:[
+ {t:'Square — the loss',g:'²',f:'ℒ = r²',v:'r = 0.5 → ℒ = 0.25',o:'ℒ',U:1,y:'sq',i:[['r',1,'2r = 2 × 0.5 = 1.']]},
+ {t:'Subtract the target',g:'−',f:'r = p − y',v:'p = 0.5, y = 0 → r = 0.5',o:'r',U:1,y:'sub',i:[['p',1,'Nudge p by 1 and r moves the same way.'],['y',-1,'y is subtracted, so the sign flips: −1.']]},
+ {t:'Sigmoid',g:'σ',f:'p = σ(z)',v:'z = 0 → p = 0.5',o:'p',U:1,y:'sig',i:[['z',0.25,'σ′(z) = σ(z)(1 − σ(z)) = 0.5 × 0.5 = 0.25 — the slope of the S-curve at z = 0.']]},
+ {t:'Add bias',g:'+',f:'z = s + b',v:'4 + (−4) = 0',o:'z',U:0.25,y:'add',i:[['s',1,'Addition passes gradients straight through: +1.'],['b',1,'Addition passes gradients straight through: +1.']]},
+ {t:'Multiply',g:'×',f:'s = w·x',v:'(1)(4) = 4',o:'s',U:0.25,y:'mul',i:[['w',4,'Local gradient = the other factor = x = 4.'],['x',1,'Local gradient = the other factor = w = 1.']]}
+]},
+
+{id:4,title:'ReLU, then squared error',eq:'ℒ = (max(0, wx + b) − y)²',chips:['ReLU','²'],
+ sub:'The gate that either passes everything or nothing.',
+ vals:'w = 1, x = 3, b = −1, y = 0.5 → z = 2, a = 2, ℒ = 2.25',
+ note:'With z = 2 > 0 the ReLU is a straight pipe: everything passes ×1. Had z been negative, every gradient below it would be exactly 0.',
+ N:[
+ {t:'Square — the loss',g:'²',f:'ℒ = r²',v:'r = 1.5 → ℒ = 2.25',o:'ℒ',U:1,y:'sq',i:[['r',3,'2r = 2 × 1.5 = 3.']]},
+ {t:'Subtract the target',g:'−',f:'r = a − y',v:'a = 2, y = 0.5 → r = 1.5',o:'r',U:3,y:'sub',i:[['a',1,'Nudge a by 1 and r moves the same way.'],['y',-1,'y is subtracted: −1.']]},
+ {t:'ReLU',g:'max',f:'a = max(0, z)',v:'z = 2 → a = 2',o:'a',U:3,y:'relu',i:[['z',1,'z = 2 > 0, so the ReLU passes its input through unchanged: local gradient 1. If z were negative the output would be the constant 0 and the local gradient would be 0 — gradient blocked.']]},
+ {t:'Add bias',g:'+',f:'z = s + b',v:'3 + (−1) = 2',o:'z',U:3,y:'add',i:[['s',1,'Addition passes gradients straight through: +1.'],['b',1,'Addition passes gradients straight through: +1.']]},
+ {t:'Multiply',g:'×',f:'s = w·x',v:'(1)(3) = 3',o:'s',U:3,y:'mul',i:[['w',3,'Local gradient = the other factor = x = 3.'],['x',1,'Local gradient = the other factor = w = 1.']]}
+]},
+
+{id:5,title:'Reciprocal, then squared error',eq:'ℒ = (1/(wx + b) − y)²',chips:['1/t','²'],
+ sub:'Division flips the sign: −1/t² rides all the way back.',
+ vals:'w = 1, x = 1, b = −0.5, y = 0 → t = 0.5, ŷ = 2, ℒ = 4',
+ note:'The −1/t² sign flip at t = 0.5 (that is, −4) propagates: every parameter gradient comes out negative.',
+ N:[
+ {t:'Square — the loss',g:'²',f:'ℒ = r²',v:'r = 2 → ℒ = 4',o:'ℒ',U:1,y:'sq',i:[['r',4,'2r = 2 × 2 = 4.']]},
+ {t:'Subtract the target',g:'−',f:'r = ŷ − y',v:'ŷ = 2, y = 0 → r = 2',o:'r',U:4,y:'sub',i:[['ŷ',1,'Nudge ŷ by 1 and r moves the same way.'],['y',-1,'y is subtracted: −1.']]},
+ {t:'Reciprocal',g:'1/t',f:'ŷ = 1/t',v:'t = 0.5 → ŷ = 2',o:'ŷ',U:4,y:'recip',i:[['t',-4,'d/dt (1/t) = −1/t². At t = 0.5: −1/(0.5)² = −1/0.25 = −4.']]},
+ {t:'Add bias',g:'+',f:'t = s + b',v:'1 + (−0.5) = 0.5',o:'t',U:-16,y:'add',i:[['s',1,'Addition passes gradients straight through: +1.'],['b',1,'Addition passes gradients straight through: +1.']]},
+ {t:'Multiply',g:'×',f:'s = w·x',v:'(1)(1) = 1',o:'s',U:-16,y:'mul',i:[['w',1,'Local gradient = the other factor = x = 1.'],['x',1,'Local gradient = the other factor = w = 1.']]}
+]},
+
+{id:6,title:'Shared input, two paths',eq:'ℒ = (w₁x · w₂x)²',chips:['×','²','shared input'],
+ sub:'x feeds two multiplies — its gradient is the sum over both paths.',
+ vals:'w₁ = 2, w₂ = 3, x = 2 → u = 4, v = 6, ℒ = 576',
+ note:'The multivariate chain rule in action: ∇_xℒ = 576 + 576 = 1152, one share per path. Check: ℒ = w₁²w₂²x⁴ → ∇_xℒ = 4w₁²w₂²x³ = 4·4·9·8 = 1152 ✓.',
+ N:[
+ {t:'Square — the loss',g:'²',f:'ℒ = q²',v:'q = 24 → ℒ = 576',o:'ℒ',U:1,y:'sq',i:[['q',48,'2q = 2 × 24 = 48.']]},
+ {t:'Multiply the branches',g:'×',f:'q = u·v',v:'(4)(6) = 24',o:'q',U:48,y:'mul',i:[['u',6,'Local gradient with respect to u = the other factor, v = 6.'],['v',4,'Local gradient with respect to v = the other factor, u = 4.']]},
+ {t:'Multiply, upper branch',g:'×',f:'u = w₁·x',v:'(2)(2) = 4',o:'u',U:288,y:'mul',i:[['w₁',2,'Local gradient = the other factor = x = 2.'],['x',2,'Local gradient = the other factor = w₁ = 2 — and x also feeds the lower branch, so this is only the upper-branch share.']]} ,
+ {t:'Multiply, lower branch',g:'×',f:'v = w₂·x',v:'(3)(2) = 6',o:'v',U:192,y:'mul',i:[['w₂',2,'Local gradient = the other factor = x = 2.'],['x',3,'Local gradient = the other factor = w₂ = 3 — the lower-branch share of x.']]}
+]},
+
+{id:7,title:'One-hidden-layer network',eq:'ℒ = (w₂σ(w₁x + b₁) + b₂ − y)²',chips:['σ','2 layers','²'],
+ sub:'A real 2-layer net in miniature: two sigmoids’ worth of bookkeeping.',
+ vals:'w₁ = 1, x = 2, b₁ = −2, w₂ = 2, b₂ = 0, y = 0 → h = 0.5, ŷ = 1, ℒ = 1',
+ note:'The error signal 2 crosses the output multiply (∇_hℒ = 4), gets gated to 1 by σ′ = 0.25 at the hidden layer, then splits into w₁, x, b₁. Two layers, two parameter groups — exactly what a real net does, one neuron at a time.',
+ N:[
+ {t:'Square — the loss',g:'²',f:'ℒ = r²',v:'r = 1 → ℒ = 1',o:'ℒ',U:1,y:'sq',i:[['r',2,'2r = 2 × 1 = 2.']]},
+ {t:'Subtract the target',g:'−',f:'r = ŷ − y',v:'ŷ = 1, y = 0 → r = 1',o:'r',U:2,y:'sub',i:[['ŷ',1,'Nudge ŷ by 1 and r moves the same way.'],['y',-1,'y is subtracted: −1.']]},
+ {t:'Add output bias',g:'+',f:'ŷ = t + b₂',v:'t = 1, b₂ = 0 → ŷ = 1',o:'ŷ',U:2,y:'add',i:[['t',1,'Addition passes gradients straight through: +1.'],['b₂',1,'Addition passes gradients straight through: +1.']]},
+ {t:'Multiply by hidden unit',g:'×',f:'t = w₂·h',v:'(2)(0.5) = 1',o:'t',U:2,y:'mul',i:[['w₂',0.5,'Local gradient = the other factor = h = 0.5.'],['h',2,'Local gradient = the other factor = w₂ = 2.']]},
+ {t:'Sigmoid (hidden layer)',g:'σ',f:'h = σ(z₁)',v:'z₁ = 0 → h = 0.5',o:'h',U:4,y:'sig',i:[['z₁',0.25,'σ′(z₁) = σ(z₁)(1 − σ(z₁)) = 0.5 × 0.5 = 0.25.']]},
+ {t:'Add hidden bias',g:'+',f:'z₁ = s + b₁',v:'2 + (−2) = 0',o:'z₁',U:1,y:'add',i:[['s',1,'Addition passes gradients straight through: +1.'],['b₁',1,'Addition passes gradients straight through: +1.']]},
+ {t:'Multiply',g:'×',f:'s = w₁·x',v:'(1)(2) = 2',o:'s',U:1,y:'mul',i:[['w₁',2,'Local gradient = the other factor = x = 2.'],['x',1,'Local gradient = the other factor = w₁ = 1.']]}
+]},
+
+{id:8,title:'SVM hinge loss',eq:'ℒ = max(0, 1 − y(wx + b))',chips:['max(0,·)','margin'],
+ sub:'The loss is itself a max: gradients flow only inside the margin.',
+ vals:'y = +1, w = 1, x = 2, b = −1.5 → y·z = 0.5, ℒ = 0.5',
+ note:'The margin y·z = 0.5 sits below 1, so the hinge is active and gradients flow — descending them pushes y·z up toward 1, the SVM objective. If y·z ≥ 1, every gradient here would be 0. (∇_yℒ = −0.5 exists mathematically, but labels are never trained.)',
+ N:[
+ {t:'Hinge — the loss',g:'max',f:'ℒ = max(0, q)',v:'q = 0.5 → ℒ = 0.5',o:'ℒ',U:1,y:'hinge',i:[['q',1,'q = 0.5 > 0, so the max passes q through: local gradient 1. If q ≤ 0 the max would return the constant 0 and the gradient would be 0.']]},
+ {t:'Subtract from 1',g:'−',f:'q = 1 − m',v:'1 − 0.5 = 0.5',o:'q',U:1,y:'sub',i:[['m',-1,'m is subtracted from a constant: nudging m up by 1 pushes q down by 1.']]},
+ {t:'Multiply by the label',g:'×',f:'m = y·z',v:'(+1)(0.5) = 0.5',o:'m',U:-1,y:'mul',i:[['y',0.5,'Local gradient = the other factor = z = 0.5 (y is the ±1 label — gradient computed, never trained).'],['z',1,'Local gradient = the other factor = y = +1.']]},
+ {t:'Add bias',g:'+',f:'z = s + b',v:'2 + (−1.5) = 0.5',o:'z',U:-1,y:'add',i:[['s',1,'Addition passes gradients straight through: +1.'],['b',1,'Addition passes gradients straight through: +1.']]},
+ {t:'Multiply',g:'×',f:'s = w·x',v:'(1)(2) = 2',o:'s',U:-1,y:'mul',i:[['w',2,'Local gradient = the other factor = x = 2.'],['x',1,'Local gradient = the other factor = w = 1.']]}
+]},
+
+{id:9,title:'Logistic regression + cross-entropy',eq:'ℒ = −[y·log p + (1−y)·log(1−p)],&nbsp; p = σ(z)',chips:['σ','BCE'],
+ sub:'The classic pairing — and the famous p − y shortcut hiding at the end.',
+ vals:'y = 1, w₁ = 1, x₁ = 2, w₂ = −1, x₂ = 2, b = 0 → z = 0, p = 0.5, ℒ ≈ 0.693',
+ note:'The famous shortcut: for sigmoid + cross-entropy together, ∇_zℒ = p − y = 0.5 − 1 = −0.5. The loss and the sigmoid cancel into a clean difference — the reason logistic-regression gradients stay so simple.',
+ N:[
+ {t:'Cross-entropy — the loss',g:'BCE',f:'ℒ = −[y·log p + (1−y)·log(1−p)]',v:'p = 0.5, y = 1 → ℒ ≈ 0.693',o:'ℒ',U:1,y:'bce',i:[['p',-2,'Differentiate the loss with respect to p: −y/p + (1−y)/(1−p) = −1/0.5 + 0/0.5 = −2.']]},
+ {t:'Sigmoid',g:'σ',f:'p = σ(z)',v:'z = 0 → p = 0.5',o:'p',U:-2,y:'sig',i:[['z',0.25,'σ′(0) = 0.5 × 0.5 = 0.25.']]},
+ {t:'Add bias',g:'+',f:'z = t + b',v:'t = 0, b = 0 → z = 0',o:'z',U:-0.5,y:'add',i:[['t',1,'Addition passes gradients straight through: +1.'],['b',1,'Addition passes gradients straight through: +1.']]},
+ {t:'Add the products',g:'+',f:'t = u₁ + u₂',v:'2 + (−2) = 0',o:'t',U:-0.5,y:'add',i:[['u₁',1,'Addition passes gradients straight through: +1.'],['u₂',1,'Addition passes gradients straight through: +1.']]},
+ {t:'Multiply, feature 2',g:'×',f:'u₂ = w₂·x₂',v:'(−1)(2) = −2',o:'u₂',U:-0.5,y:'mul',i:[['w₂',2,'Local gradient = the other factor = x₂ = 2.'],['x₂',-1,'Local gradient = the other factor = w₂ = −1.']]},
+ {t:'Multiply, feature 1',g:'×',f:'u₁ = w₁·x₁',v:'(1)(2) = 2',o:'u₁',U:-0.5,y:'mul',i:[['w₁',2,'Local gradient = the other factor = x₁ = 2.'],['x₁',1,'Local gradient = the other factor = w₁ = 1.']]}
+]},
+
+{id:10,title:'Mini-batch with shared parameters',eq:'ℒ = ½[(wx₁ + b − y₁)² + (wx₂ + b − y₂)²]',chips:['½','batch','accumulate'],
+ sub:'w and b serve two data points — each collects one share per point.',
+ vals:'w = 1, b = 0, x₁ = 2, y₁ = 1, x₂ = 4, y₂ = 3 → ℒ = 1',
+ note:'A training step in miniature: w collects 2 (via point 1) + 4 (via point 2) = 6, and b collects 1 + 1 = 2. The ½ turns sums of squared errors into means. Accumulate-then-average is exactly what a real batch step does.',
+ N:[
+ {t:'Halve — the loss',g:'½',f:'ℒ = ½·Q',v:'Q = 2 → ℒ = 1',o:'ℒ',U:1,y:'half',i:[['Q',0.5,'A constant factor slides straight into the derivative: d/dQ (Q/2) = ½.']]},
+ {t:'Add the squared errors',g:'+',f:'Q = e₁ + e₂',v:'1 + 1 = 2',o:'Q',U:0.5,y:'add',i:[['e₁',1,'Addition passes gradients straight through: +1.'],['e₂',1,'Addition passes gradients straight through: +1.']]},
+ {t:'Square, point 1',g:'²',f:'e₁ = r₁²',v:'r₁ = 1 → e₁ = 1',o:'e₁',U:0.5,y:'sq',i:[['r₁',2,'2r₁ = 2 × 1 = 2.']]},
+ {t:'Square, point 2',g:'²',f:'e₂ = r₂²',v:'r₂ = 1 → e₂ = 1',o:'e₂',U:0.5,y:'sq',i:[['r₂',2,'2r₂ = 2 × 1 = 2.']]},
+ {t:'Subtract target 1',g:'−',f:'r₁ = ŷ₁ − y₁',v:'ŷ₁ = 2, y₁ = 1 → r₁ = 1',o:'r₁',U:1,y:'sub',i:[['ŷ₁',1,'Nudge ŷ₁ by 1 and r₁ moves the same way.'],['y₁',-1,'y₁ is subtracted: −1.']]},
+ {t:'Subtract target 2',g:'−',f:'r₂ = ŷ₂ − y₂',v:'ŷ₂ = 4, y₂ = 3 → r₂ = 1',o:'r₂',U:1,y:'sub',i:[['ŷ₂',1,'Nudge ŷ₂ by 1 and r₂ moves the same way.'],['y₂',-1,'y₂ is subtracted: −1.']]},
+ {t:'Add bias, point 1',g:'+',f:'ŷ₁ = u₁ + b',v:'2 + 0 = 2',o:'ŷ₁',U:1,y:'add',i:[['u₁',1,'Addition passes gradients straight through: +1.'],['b',1,'Addition passes gradients straight through: +1. b serves both points — this is point 1’s share.']]},
+ {t:'Add bias, point 2',g:'+',f:'ŷ₂ = u₂ + b',v:'4 + 0 = 4',o:'ŷ₂',U:1,y:'add',i:[['u₂',1,'Addition passes gradients straight through: +1.'],['b',1,'Addition passes gradients straight through: +1 — point 2’s share of b.']]},
+ {t:'Multiply, point 1',g:'×',f:'u₁ = w·x₁',v:'(1)(2) = 2',o:'u₁',U:1,y:'mul',i:[['w',2,'Local gradient = the other factor = x₁ = 2. w is shared, so this is only the share flowing through point 1.'],['x₁',1,'Local gradient = the other factor = w = 1.']]},
+ {t:'Multiply, point 2',g:'×',f:'u₂ = w·x₂',v:'(1)(4) = 4',o:'u₂',U:1,y:'mul',i:[['w',4,'Local gradient = the other factor = x₂ = 4 — point 2’s share of w.'],['x₂',1,'Local gradient = the other factor = w = 1.']]}
+]}
+];
+///DATA__
+
+/* ---------- storage ---------- */
+const KEY='bp10-v1';
+const DB=(()=>{try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){return{}}})();
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(DB))}catch(e){}};
+const exDB=i=>DB['ex'+i]||(DB['ex'+i]={done:false,stages:[]});
+
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const esc=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const NUM=v=>{const t=String(v).trim().replace(/−/g,'-').replace(/\s+/g,'');
+  const f=t.match(/^(-?\d*\.?\d+)\/(-?\d*\.?\d+)$/);
+  if(f)return parseFloat(f[1])/parseFloat(f[2]);
+  const n=parseFloat(t);return isNaN(n)?NaN:n};
+const HIT=(a,e)=>!isNaN(a)&&Math.abs(a-e)<1e-9;
+const fmt=v=>String(v);
+
+/* ---------- router ---------- */
+const view=$('#view'),homeBtn=$('#home'),where=$('#where');
+function route(){
+  const m=location.hash.match(/^#ex\/(\d+)$/);
+  if(m&&EXS[+m[1]-1])renderEx(+m[1]-1);else renderIndex();
+  scrollTo({top:0});
+}
+addEventListener('hashchange',route);
+
+/* ---------- index ---------- */
+function renderIndex(){
+  homeBtn.hidden=true;
+  const done=EXS.filter((_,i)=>DB['ex'+(i+1)]?.done).length;
+  where.textContent='';
+  view.innerHTML=`<h1>Backward pass practice</h1>
+  <p class="lede">Ten exercises, warm-up to mini-batch. Work from the loss back to the inputs: for each node, local gradients, then upstream, then downstream. A node unlocks when the one to its right is done. Wrong answers get a hint, then the worked solution.</p>
+  <p class="prog">${done} of ${EXS.length} complete${done===EXS.length?' — all done. 🎉':''}</p>
+  <div class="grid">${EXS.map((ex,i)=>{
+    const d=DB['ex'+ex.id]?.done;
+    return `<button class="excard${d?' done':''}" data-go="${ex.id}">
+      <div class="no">Exercise ${i+1} · ${ex.N.length} steps ${d?'<span class="tick">✓ done</span>':''}</div>
+      <div class="nm">${esc(ex.title)}</div>
+      <div class="eqs">${ex.eq}</div>
+      <div>${ex.chips.map(c=>`<span class="chip">${esc(c)}</span>`).join('')}</div>
+    </button>`}).join('')}</div>
+  <button class="ghost" id="reset" ${done?'':'hidden'}>Reset progress</button>`;
+  view.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>location.hash='#ex/'+b.dataset.go);
+  const r=$('#reset');if(r)r.onclick=()=>{if(confirm('Clear all saved progress?')){Object.keys(DB).forEach(k=>delete DB[k]);save();route()}};
+}
+
+/* ---------- computation graph ---------- */
+function drawGraph(ex){
+  const N=ex.N,P={},C={},cnt={};
+  N.forEach((n,k)=>{P[n.o]=k;n.i.forEach(([s])=>{cnt[s]=(cnt[s]||0)+1;(C[s]=C[s]||[]).push(k)})});
+  const fwd=[...N.keys()].reverse();
+  const dep={},y={};
+  fwd.forEach(k=>{const n=N[k];let d=1;const ps=[];
+    n.i.forEach(([s])=>{if(P[s]!=null){ps.push(P[s]);d=Math.max(d,dep[P[s]]+1)}});
+    dep[k]=d;y[k]=ps.length?ps.reduce((a,p)=>a+y[p],0)/ps.length:80;});
+  const cols={};fwd.forEach(k=>{(cols[dep[k]]=cols[dep[k]]||[]).push(k)});
+  Object.values(cols).forEach(c=>{c.sort((a,b)=>y[a]-y[b]);
+    for(let i=1;i<c.length;i++)if(y[c[i]]-y[c[i-1]]<58)y[c[i]]=y[c[i-1]]+58;});
+  const X0=86,CG=118,W=52,H=34;
+  const X=k=>X0+(dep[k]-1)*CG, Y=k=>y[k]-H/2;
+  const maxD=Math.max(...Object.values(dep));
+  const lossK=+Object.keys(dep).find(k=>dep[k]===maxD);
+  const termX=X(lossK)+W+48;
+  // given symbols: left column (feeding depth-1 ops) or floating labels near deeper consumers
+  const givenSyms=[...new Set(N.flatMap(n=>n.i.map(x=>x[0])).filter(s=>P[s]==null))];
+  const left=[],float=[];
+  givenSyms.forEach(s=>{if(C[s].some(k=>dep[k]===1))left.push(s);else float.push(s)});
+  left.sort((a,b)=>C[a].reduce((x,k)=>x+y[k],0)/C[a].length-C[b].reduce((x,k)=>x+y[k],0)/C[b].length);
+  const gy={};left.forEach((s,i)=>gy[s]=28+i*34);
+  let bottom=Math.max(120,...N.map(k=>y[k]+H/2+16));
+  const fl={};float.forEach(s=>{const ks=C[s];const cx=ks.reduce((a,k)=>a+X(k)+W/2,0)/ks.length;
+    const cy=Math.max(...ks.map(k=>y[k]+H/2))+24;fl[s]={x:cx,y:cy};bottom=Math.max(bottom,cy+18)});
+  const curve=(x1,y1,x2,y2)=>{const dx=Math.max(18,Math.abs(x2-x1)*0.5);
+    return `M ${x1} ${y1} C ${x1+dx} ${y1}, ${x2-dx} ${y2}, ${x2} ${y2}`};
+  let edges='',labels='';
+  // given → consumer edges
+  givenSyms.forEach(s=>{C[s].forEach(k=>{
+    if(fl[s]){edges+=`<path class="gedge" d="${curve(fl[s].x,fl[s].y-10,X(k)+W/2,y[k]+H/2)}" marker-end="url(#ah)"/>`}
+    else{const w=s.length*8.5;edges+=`<path class="gedge" d="${curve(14+w+6,gy[s],X(k)-W/2,y[k])}" marker-end="url(#ah)"/>`}
+  })});
+  // produced → consumer edges (symbol labelled on the edge)
+  N.forEach((n,k)=>n.i.forEach(([s])=>{const p=P[s];if(p==null)return;
+    const x1=X(p)+W/2,y1=y[p],x2=X(k)-W/2,y2=y[k];
+    edges+=`<path class="gedge" d="${curve(x1,y1,x2,y2)}" marker-end="url(#ah)"/>`;
+    labels+=`<text class="gedgelab" text-anchor="middle" x="${(x1+x2)/2}" y="${(y1+y2)/2-8}">${s}</text>`;}));
+  edges+=`<path class="gedge" d="${curve(X(lossK)+W/2,y[lossK],termX-14,y[lossK])}" marker-end="url(#ah)"/>`;
+  // op boxes
+  const boxes=N.map((n,k)=>`<g><rect class="gbox" id="op${k}" x="${X(k)-W/2}" y="${Y(k)}" width="${W}" height="${H}" rx="8"/>
+    <text class="glab" text-anchor="middle" x="${X(k)}" y="${y[k]+5}">${esc(n.g)}</text></g>`).join('');
+  // given labels
+  const gl=left.map(s=>`<circle class="gdot" cx="9" cy="${gy[s]-4}" r="2.5"/><text class="gvar" x="16" y="${gy[s]}">${s}</text>`).join('')
+    +float.map(s=>`<text class="gvar" text-anchor="middle" x="${fl[s].x}" y="${fl[s].y}">${s}</text>`).join('');
+  const width=termX+26;
+  return `<div class="graph"><p class="cap">How the pieces combine — given values (green, left) feed operations (boxes), flowing left to right into the loss. Boxes light up as you solve their step, backward.</p>
+  <svg width="${width}" height="${bottom+10}" viewBox="0 0 ${width} ${bottom+10}" role="img" aria-label="computation graph">
+  <defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--line)"/></marker></defs>
+  ${edges}${boxes}${labels}${gl}<text class="gterm" x="${termX}" y="${y[lossK]+6}">ℒ</text></svg></div>`;
+}
+const setOp=(k,cls)=>{const el=document.getElementById('op'+k);if(el){el.classList.remove('cur','gd');if(cls)el.classList.add(cls)}};
+
+/* ---------- exercise ---------- */
+function renderEx(i){
+  const ex=EXS[i],N=ex.N,d=exDB(ex.id);
+  homeBtn.hidden=false;homeBtn.onclick=()=>location.hash='';
+  where.textContent=`Exercise ${i+1} of ${EXS.length}`;
+  const cnt={};N.forEach(n=>n.i.forEach(([s])=>cnt[s]=(cnt[s]||0)+1));
+  view.innerHTML=`<h1>${esc(ex.title)}</h1>
+  <p class="lede">${esc(ex.sub)} Work from the loss back to the inputs: local gradients, then upstream, then downstream.</p>
+  <div class="eq">${ex.eq}</div>
+  <p class="vals">${esc(ex.vals)}</p>
+  ${drawGraph(ex)}
+  ${d.done?`<button class="ghost" id="redo">↺ Redo this exercise</button>`:''}
+  <div id="app"></div>
+  <div id="sum" class="card"></div>`;
+  const redo=$('#redo');if(redo)redo.onclick=()=>{delete DB['ex'+ex.id];save();renderEx(i)};
+  const app=$('#app'),sum=$('#sum');
+  const fld=(lab,e,h)=>`<label class="row"><span>${lab} =</span><input inputmode="decimal" autocomplete="off" data-e="${e}" data-h="${esc(h)}"></label>`;
+  let quiet=false;
+  const record=(k,j)=>{d.stages.push([k,j]);save()};
+  const finish=()=>{
+    d.done=true;save();
+    const produced={};N.forEach(n=>produced[n.o]=1);
+    const order=[],m={};
+    [...N].reverse().forEach(n=>n.i.forEach(([a,L])=>{if(produced[a])return;if(!(a in m)){m[a]=[];order.push(a)}m[a].push(L*n.U)}));
+    const gi=order.map(a=>{const c=m[a],tot=c.reduce((x,z)=>x+z,0);
+      return `∇<sub>${a}</sub>ℒ = ${c.length>1?c.map(fmt).join(' + ')+' = '+fmt(tot):fmt(tot)}`}).join(',&nbsp; ');
+    sum.innerHTML=`<h2>Done. Gradients at the inputs</h2><p class="gi">${gi}</p><p class="note">${esc(ex.note)}</p>
+    <div class="nav">${i>0?`<button id="prev">← Exercise ${i}</button>`:'<span></span>'}
+    ${i<EXS.length-1?'<button id="next">Exercise '+(i+2)+' →</button>':'<button id="home2">Back to all exercises</button>'}</div>`;
+    sum.classList.add('on');
+    const nx=$('#next');if(nx)nx.onclick=()=>location.hash='#ex/'+(i+2);
+    const pv=$('#prev');if(pv)pv.onclick=()=>location.hash='#ex/'+i;
+    const h2=$('#home2');if(h2)h2.onclick=()=>location.hash='';
+    if(!quiet)sum.scrollIntoView({behavior:'smooth',block:'start'});
+  };
+  N.forEach((n,k)=>{
+    const s=document.createElement('section');s.className='card';s.id='n'+k;if(k)s.inert=true;
+    const shared=a=>cnt[a]>1;
+    const st=[
+      ['Local gradients (this node only)',n.i.map(([a,L,h])=>fld(`∇<sub>${a}</sub>${n.o}`,L,h||H[n.y])).join('')],
+      ['Upstream gradient',fld(`∇<sub>${n.o}</sub>ℒ`,n.U,H.up)],
+      ['Downstream gradients',n.i.map(([a,L])=>fld(`∇<sub>${a}</sub>ℒ${shared(a)?' <small class="tag">(this branch)</small>':''}`,L*n.U,H.down+(shared(a)?' '+H.branch:''))).join('')]
+    ];
+    s.innerHTML=`<h2>${k+1}. ${esc(n.t)}</h2><p class="sub"><b>${n.f}</b> &nbsp; ${n.v}</p>`+
+      st.map(([h,b],j)=>`<div class="st" data-s="${j}" ${j?'hidden':''}><h3>${h}</h3>${b}<button>Check</button><button class="ghost" hidden>Show answer</button><p class="fb"></p></div>`).join('');
+    app.appendChild(s);
+    s.querySelectorAll('.st').forEach(stg=>{
+      let miss=0,reveal=false;
+      const [b,g]=stg.querySelectorAll('button'),fb=stg.querySelector('.fb'),ins=[...stg.querySelectorAll('input')];
+      g.onclick=()=>{reveal=true;ins.forEach(ip=>ip.value=ip.dataset.e);b.click()};
+      b.onclick=()=>{
+        let bad=null;
+        ins.forEach(ip=>{
+          const ok=HIT(NUM(ip.value),+ip.dataset.e);
+          ip.classList.toggle('ok',ok);ip.classList.toggle('bad',!ok);if(!ok&&!bad)bad=ip;
+        });
+        if(bad){miss++;fb.className='fb bad';
+          fb.innerHTML=bad.value.trim()===''?'Fill in every box.':'Not quite. '+esc(bad.dataset.h);
+          g.hidden=miss<2;return}
+        fb.className='fb ok';
+        fb.innerHTML=reveal?('Answer shown — how it computes: '+ins.map(ip=>`∇ = ${fmt(ip.dataset.e)} (${esc(ip.dataset.h)})`).join(' &nbsp;·&nbsp; ')):'Correct.';
+        ins.forEach(ip=>ip.disabled=true);b.hidden=g.hidden=true;
+        if(!quiet)record(k,+stg.dataset.s);
+        const nx=stg.nextElementSibling;
+        if(nx)nx.hidden=false;
+        else{
+          s.classList.add('done');
+          setOp(k,'gd');if(N[k+1])setOp(k+1,'cur');
+          if(N[k+1]){const m=document.getElementById('n'+(k+1));m.inert=false;
+            if(!quiet)m.scrollIntoView({behavior:'smooth',block:'start'})}
+          else finish();
+        }
+      };
+      ins.forEach(ip=>ip.addEventListener('keydown',e=>{if(e.key==='Enter')b.click()}));
+    });
+  });
+  setOp(0,'cur');
+  // restore saved stage progress
+  if(d.stages.length){
+    quiet=true;
+    d.stages.forEach(([k,j])=>{
+      const stg=view.querySelector(`#n${k} .st[data-s="${j}"]`);
+      if(stg&&!stg.querySelector('button').hidden){
+        stg.querySelectorAll('input').forEach(ip=>ip.value=ip.dataset.e);
+        stg.querySelector('button').click();
+      }});
+    quiet=false;
+  }
+}
+route();
+</script>
+</body>
+</html>
