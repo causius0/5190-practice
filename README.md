@@ -3,7 +3,7 @@
 [![validate](https://github.com/causius0/5190-practice/actions/workflows/validate.yml/badge.svg)](https://github.com/causius0/5190-practice/actions/workflows/validate.yml)
 [![Live](https://img.shields.io/badge/live-5190--practice.vercel.app-1f7a5c)](https://5190-practice.vercel.app)
 
-Interactive backpropagation practice — 10 exercises that walk you from a single product-and-square up to a mini-batch with shared parameters. Built as practice for CIS 5190 (Applied Machine Learning).
+Interactive backpropagation practice — 10 exercises that walk you from a single product-and-square up to a mini-batch with shared parameters, plus exam flashcards: 24 past-exam questions grouped by topic, click to reveal the official answers. Built as practice for CIS 5190 (Applied Machine Learning).
 
 **Live: https://5190-practice.vercel.app**
 
@@ -33,9 +33,13 @@ Interactive backpropagation practice — 10 exercises that walk you from a singl
 - Shared symbols (an input feeding two branches, a weight serving two data points) are tagged *(this branch)* — the final summary sums the shares.
 - Progress is saved in your browser.
 
+## Exam flashcards
+
+24 questions from past CIS 4190/5190 exams (Midterm 1 Fall 2025, Midterm 1 Fall 2024, Final Fall 2022), grouped into 8 topics: logistic regression, neural networks, bias–variance, kNN, linear regression, backpropagation, regularization, and train/val/test splits. Click a question to reveal its answer (the official solutions, verified against the source PDFs), or reveal a whole topic at once.
+
 ## Repo layout
 
-- `index.html` — the entire app. Single file, no dependencies; all exercise data lives inline between `//__DATA__` markers.
+- `index.html` — the entire app. Single file, no dependencies; exercise and flashcard data live inline between `//__DATA__` markers.
 - `scripts/verify.mjs` — replays the chain rule over every exercise's gradient data. Run it with `node scripts/verify.mjs`.
 - `.github/workflows/validate.yml` — runs that check on every push and PR.
 
