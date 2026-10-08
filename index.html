@@ -66,6 +66,16 @@ button.ghost{background:none;color:var(--mut);text-decoration:underline;font-wei
 .gedgelab{font:italic 600 13px "EB Garamond",Georgia,serif;fill:var(--fwd)}
 .gdot{fill:var(--fwd)}
 .nav{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:14px}
+.fc{border:1px solid var(--line);border-radius:6px;margin:10px 0;padding:10px 14px;cursor:pointer;background:var(--wash)}
+.fc:hover{border-color:var(--acc)}
+.fc:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.fc .fcq{white-space:pre-wrap}
+.fc .fca{white-space:pre-wrap;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);color:var(--fwd)}
+.fc .fca b{color:var(--ink)}
+.srctag{display:inline-block;font-size:.72rem;border:1px solid var(--line);border-radius:99px;padding:0 8px;color:var(--mut);margin:0 0 6px;background:var(--card)}
+.cnt{color:var(--mut);font-size:.85rem;font-weight:400}
+.rall{margin:0;font-size:.85rem}
+.fclink{width:100%;margin-top:14px}
 </style>
 </head>
 <body>
@@ -217,6 +227,57 @@ const EXS=[
  {t:'Multiply, point 2',g:'×',f:'u₂ = w·x₂',v:'(1)(4) = 4',o:'u₂',U:1,y:'mul',i:[['w',4,'Local gradient = the other factor = x₂ = 4 — point 2’s share of w.'],['x₂',1,'Local gradient = the other factor = w = 1.']]}
 ]}
 ];
+
+const CARDS=[
+{topic:'Logistic Regression',src:'MT25 Q11',q:'In multi-class logistic regression over 3 classes {1,2,3}, the probability assigned to class k is p_β(y=k|x) = e^{β_kᵀx} / Σ_{y=1,2,3} e^{β_yᵀx}. Inputs x have dimension d = 6 (including the bias term).\n(i) How many learnable parameters are in this classifier?\n(ii) If you scale all parameters by 10, how does it change the class predictions and confidences?\n(iii) Instead, suppose you constrain the parameter vector for class 1, β_{k=1}, to be 0 — what are the new expressions for the probabilities p_β(y=k|x) for each class k?\n(iv) How many parameters are in this new, modified classifier?\n(v) Is there a way to adjust the remaining parameters β_{k=2} and β_{k=3} to recover the old probabilities for all classes?',
+a:'(i) 3×6 = 18 parameters.\n(ii) It does not change the class predictions, because e^x is monotonic in x — whatever class probability was highest earlier remains highest after scaling. But confidences for those unchanged class predictions are now higher.\n(iii) p_β(y=1|x) = 1/(1+e^{β₂ᵀx}+e^{β₃ᵀx});  p_β(y=2|x) = e^{β₂ᵀx}/(1+e^{β₂ᵀx}+e^{β₃ᵀx});  p_β(y=3|x) = e^{β₃ᵀx}/(1+e^{β₂ᵀx}+e^{β₃ᵀx}).\n(iv) Just 2×6 = 12 parameters.\n(v) Yes. Set β₂_new ← β₂ − β₁ and β₃_new ← β₃ − β₁. In other words, the 3-class logistic regression classifier actually only required 2 parameter vectors — similar to how 2-class logistic regression only required one parameter vector of length d.'},
+{topic:'Logistic Regression',src:'MT24 Q8',q:'You train a logistic regression model on a binary task with features Age and Income: P(y=1|X) = 1/(1+e^{−(β₀+β₁·Age+β₂·Income)}). After training you obtain β₀ = −3, β₁ = 0.05, β₂ = 0.001. Which statements are correct (select all)?\nA. An increase of 20 years in Age results in a greater change in the predicted probability than an increase of $10,000 in Income.\nB. The positive sign of β₁ and β₂ indicates that increasing Age and Income both increase the predicted probability of y=1.\nC. The effect on the predicted probability of an increase by δ in Income is negligible compared to the effect of the same δ increase in Age, because β₁ is much larger than β₂.\nD. The intercept β₀ = −3 suggests that when both Age and Income are zero, the predicted probability of y=1 is ≈50%.',
+a:'B, C.\nWhy not A: 20·β₁ = 1.0 but 10,000·β₂ = 10 — the Income jump moves the logit more. Why not D: σ(−3) ≈ 4.7%, not 50%.'},
+{topic:'Logistic Regression',src:'MT24 Q6',q:'You fit a logistic regression classifier using the plain maximum likelihood objective and batch gradient descent with learning rate α. You track ‖β_t − β_{t−1}‖²₂ over iterations t and observe that the parameters keep changing indefinitely without convergence. What would you suspect (select all)?\nA. The learning rate is too small.\nB. The learning rate is too large.\nC. The training dataset cannot be separated by any function within your function class.\nD. The training dataset is perfectly separable within your function class.',
+a:'B, D.\nB: too-large steps oscillate or diverge. D: with perfectly separable data and plain MLE, scaling up a perfect separator always improves NLL — so the optimal weights diverge to infinity and the parameters drift forever.'},
+{topic:'Logistic Regression',src:'F22 Q7',q:'Logistic regression likelihood p_θ(Y=y|X=x) = σ(θᵀx) if y=1, and 1−σ(θᵀx) if y=0, where σ(z)=1/(1+e^{−z}). We rescale the predicted probabilities via temperature scaling, introducing β∈ℝ: p_β(Y=y|X=x) = σ(β·θᵀx) if y=1, 1−σ(β·θᵀx) if y=0.\n(a) What happens to the classification boundary and the predicted probabilities if β→0?\n(b) What happens if β→∞?',
+a:'(a) The classification boundary does not change; the predicted probabilities → 1/2.\n(b) The classification boundary still does not change; the predicted probabilities → 0 or → 1 (just →1 is fine).'},
+{topic:'Neural Networks',src:'MT25 Q5',q:'Consider a feed-forward NN: input 4-dim, hidden layer of 6 ReLU units (fully connected), output layer of 1 sigmoid unit. Both layers include bias.\n(i) How many total learnable parameters?\n(ii) For input x∈ℝ⁴, how many activations after the activation functions?\n(iii) If batch size B=16, how many activations in the forward pass?\n(iv) For B=16, how many parameter gradients in the backward pass?',
+a:'(i) Hidden: 4×6 weights + 6 biases = 30; output: 6×1 weights + 1 bias = 7; total 37.\n(ii) Hidden: 6 + output: 1 = 7.\n(iii) 16 samples × 7 activations/sample = 112.\n(iv) Parameter gradients don’t depend on batch size — one gradient per parameter = 37.'},
+{topic:'Neural Networks',src:'MT24 Q1',q:'Which is the correct order of steps in training a neural network?\nA. backward → compute loss → forward.\nB. forward → backward → compute loss.\nC. compute loss → forward → backward.\nD. forward → compute loss → backward.',
+a:'D — forward pass → compute loss → backward pass.'},
+{topic:'Neural Networks',src:'MT24 Q2',q:'Which NN is most expressive (represents the most possible functions)?\nA. ReLU(Wx+b).\nB. W₂(ReLU(W₁x+b₁))+b₂.\nC. W₂(W₁x+b₁)+b₂.\nD. W₁x+W₂x+W₁W₂x+b₁+b₂+b₁b₂.',
+a:'B — the only one with a nonlinearity sandwiched between two learnable linear layers. (C collapses to a single linear map; D has no nonlinearity at all.)'},
+{topic:'Neural Networks',src:'MT25 Q4',q:'Which statements about the sigmoid activation are true (select all)?\nA. Sigmoid is prone to vanishing gradients at extreme values.\nB. Sigmoid can output negative values.\nC. Sigmoid is non-linear, which decreases representation power.\nD. Sigmoid is numerically unstable when the input is large.',
+a:'A, D.\n(B False — sigmoid outputs live in (0,1). C False — nonlinearity increases representation power.)'},
+{topic:'Neural Networks',src:'F22 Q8',q:'NN with one hidden layer: f_W(x) = [1 1]ᵀ σ(Wx) = σ(W₁₁x₁+W₁₂x₂) + σ(W₂₁x₁+W₂₂x₂), with σ nonlinear.\n(a) Compute ∇_W f_W(x) (each ∂/∂W_ij).\n(b) Compute ∇_W L(W;x,y) for L = (f_W(x)−y)².\n(c) If W₁₁=W₂₁ and W₁₂=W₂₂, show these equalities still hold after one GD step.\n(d) Explain why zero-initializing the weight matrix is bad.',
+a:'(a) ∇_W f_W(x) = [[σ′(W₁₁x₁+W₁₂x₂)x₁, σ′(W₁₁x₁+W₁₂x₂)x₂],[σ′(W₂₁x₁+W₂₂x₂)x₁, σ′(W₂₁x₁+W₂₂x₂)x₂]].\n(b) ∇_W L = 2(f_W(x)−y)·∇_W f_W(x).\n(c) With equal rows, the gradient rows are identical too, so the update W′ = W − η·2(f_W(x)−y)·∇_W f_W(x) keeps W′₁₁=W′₂₁ and W′₁₂=W′₂₂.\n(d) Zero init (like any row-equal init) keeps W₁₁=W₂₁ and W₁₂=W₂₂ forever — the NN effectively has half as many parameters; the two hidden units never specialize.'},
+{topic:'Bias–Variance Tradeoff',src:'MT24 Q9',q:'Linear regression with d features (no regularization). How do variance and bias change if you:\nA. Randomly drop 50% of the features (d/2 inputs).\nB. Keep the top d′=d/2 PCA features as input.\nC. Concatenate the top d′ PCA features with the original d features (d+d′ inputs).',
+a:'A. Bias increases, variance decreases.\nB. Bias increases, variance decreases.\nC. Bias and variance remain unchanged (the model could already ignore the extra features).'},
+{topic:'Bias–Variance Tradeoff',src:'MT25 Q3',q:'Which statements about bias/variance are true (select all)?\nA. A model trained on N samples has lower variance than one trained on 4N samples.\nB. If a model isn’t capturing the patterns in the training data, it is more likely to have strong bias than significant variance.\nC. Expanding the number of trainable parameters generally enhances predictive performance on unseen data regardless of training dataset size.\nD. ℓ2 regularization in linear regression typically helps control variance by preventing excessive reliance on specific training samples.',
+a:'B, D.\n(A False — more data → lower variance. C False — more parameters without more data tends to hurt.)'},
+{topic:'Bias–Variance Tradeoff',src:'F22 Q4',q:'φ₁ and φ₂ are feature maps for linear regression models βᵀφ₁(x) and βᵀφ₂(x). For each case, can the variance of βᵀφ₁(x) be higher, lower, or either vs βᵀφ₂(x)?\n(a) φ₁ has strictly more features than φ₂.\n(b) φ₁’s features are a strict superset of φ₂’s.\n(c) Same features, L2 regularization on the φ₁ model but not φ₂.\n(d) φ₁ superset of φ₂, L2 on φ₁ only.\n(e) φ₁ = PCA top k components, φ₂ = top k′<k.\n(f) φ₁ = bag of words, φ₂ = bigram model.',
+a:'(a) Either. (b) Higher. (c) Lower. (d) Either. (e) Higher. (f) Lower.'},
+{topic:'Bias–Variance Tradeoff',src:'F22 Q5',q:'You use AdaBoost to train an ensemble of logistic regression models over feature map φ. For each hyperparameter, does increasing it tend to increase or decrease variance?\n(a) The number T of AdaBoost iterations.\n(b) The L2 regularization magnitude λ.\n(c) The number of training examples n.\n(d) The number of features d.',
+a:'(a) Increases. (b) Decreases. (c) Decreases. (d) Increases.'},
+{topic:'k-Nearest Neighbors',src:'MT24 Q4',q:'For a k-NN classifier with Euclidean distance, would its decision boundary change if we multiply all features of each sample by 0.5?\nA. Yes.\nB. No.',
+a:'B — No. Scaling all features by the same constant scales every distance uniformly, so nearest neighbors and the boundary are unchanged.'},
+{topic:'k-Nearest Neighbors',src:'MT24 Q5',q:'In a k-NN model, what is the effect of choosing a very small k such as k=1? (Select all.)\nA. It leads to a more robust model that handles noise better.\nB. It may result in overfitting, as the model can be sensitive to noise and outliers.\nC. It reduces the capacity of the model.\nD. It makes the model immune to class imbalance.',
+a:'B. (k=1 memorizes the training set — low bias, high variance.)'},
+{topic:'k-Nearest Neighbors',src:'MT25 Q9',q:'A plot shows the k-NN (k=1, ℓ2) classification boundary for a binary problem, but one data point is missing. The boundary shown is correct for the full original dataset. Identify the missing point (position and class) so the boundary stays valid, and explain.',
+a:'1-NN finds perpendicular bisectors, so any line segment in the boundary must be attributable to two points of opposing classes close to it on either side. The large angular region near the center-top of the image had no square to justify it — that is where the missing point goes. (Figure question — see the solutions PDF for the marked plot.)'},
+{topic:'Linear Regression',src:'MT24 Q10',q:'Function class for regression: ŷ = f_β(x) = β₀, dataset D = {(x_i, y_i)}_{i=1..N}.\n(A) Derive β* that minimizes training MSE (1/N)Σ(ŷ_i−y_i)².\n(B) A 3-layer NN trained on this data ends with training MSE = 1.25 × variance({y_i}). Can you conclusively say whether this is a good fit?\n(C) For the same constant class, derive β+ that minimizes mean absolute error (1/N)Σ|ŷ_i−y_i|.',
+a:'(A) d/dβ₀ (1/N)Σ(β₀−y_i)² = (2/N)Σ(β₀−y_i) = 0 → β₀ = (1/N)Σy_i = ȳ, the label mean.\n(B) No — a bad fit: the constant β = ȳ already achieves MSE = variance({y_i}), and the NN does worse (1.25×).\n(C) The derivative is (#y_i<β) − (#y_i≥β); zero when the counts balance → β+ = median(y_1,…,y_N).'},
+{topic:'Linear Regression',src:'MT25 Q7',q:'Function class f_β(x) = β (same output for all x), fit to D = {(1,0),(2,4),(3,4),(4,8)} with MSE + ℓ2 regularization λ‖β‖²₂, starting at λ=0.\n(i) What is the optimal β*?\n(ii) Validation data {(1.5,2),(1.75,2),(3.5,5)} — what is the validation MSE for that β*?\n(iii) Tune λ>0 to minimize unregularized MSE on validation: what is the new β* and validation MSE, and why?\n(iv) Was this tuning procedure successful?',
+a:'(i) The label mean minimizes MSE: β* = (0+4+4+8)/4 = 4.\n(ii) ((4−2)²+(4−2)²+(4−5)²)/3 = (4+4+1)/3 = 13/3.\n(iii) λ=0 gives β*=4 and λ→∞ gives β*→0; other λ>0 sweep β* through all values in between. The validation-MSE-optimal constant is (2+2+5)/3 = 3, which lies between 4 and 0 — so some λ achieves β*=3 with validation MSE = ((3−2)²+(3−2)²+(3−5)²)/3 = (1+1+4)/3 = 2.\n(iv) A failure: we overfit not the training dataset but the validation dataset! The function class is so small that the hyperparameter λ (tuned on validation) is almost as expressive as the parameter β optimized on training data.'},
+{topic:'Linear Regression',src:'F22 Q6',q:'For which of these is optimization perfect — i.e., the standard optimizer is guaranteed to find the global minimum of the loss?\n(a) Logistic regression, loss = NLL.\n(b) Logistic regression, loss = accuracy.\n(c) Neural network with one hidden layer, loss = NLL.\n(d) k-means, loss = squared distance to the centroid, averaged over points.',
+a:'(a) Yes — NLL for logistic regression is convex.\n(b) No — accuracy is non-differentiable and non-convex.\n(c) No — NN losses are non-convex.\n(d) No — k-means only converges to a local optimum.'},
+{topic:'Backpropagation',src:'MT24 Q13',q:'NN model f_{β,ω}(x) = β·g(ω₁x₁+ω₂x₂), where g is Leaky ReLU: g(z) = z if z≥0, 0.1z if z<0. Loss L = ½(f−y)².\n(A) Write ∂L/∂β, ∂L/∂ω₁, ∂L/∂ω₂ in terms of g and g′.\n(B) Find g′(z) for Leaky ReLU.\n(C) For a single point x=[5,4], y=0, β=1, ω₁=−2, ω₂=−5, calculate the three gradients.',
+a:'(A) ∂L/∂β = (f−y)·g(ω₁x₁+ω₂x₂);  ∂L/∂ω₁ = (f−y)·β·g′(ω₁x₁+ω₂x₂)·x₁;  ∂L/∂ω₂ = (f−y)·β·g′(ω₁x₁+ω₂x₂)·x₂.\n(B) g′(z) = 1 if z≥0, 0.1 if z<0.\n(C) z = (−2)(5)+(−5)(4) = −30 < 0 → g(z) = 0.1·(−30) = −3, g′(z) = 0.1, f = 1·(−3) = −3, f−y = −3.\n∂L/∂β = (−3)(−3) = 9;  ∂L/∂ω₁ = (−3)(1)(0.1)(5) = −1.5;  ∂L/∂ω₂ = (−3)(1)(0.1)(4) = −1.2.'},
+{topic:'Backpropagation',src:'MT25 Q12',q:'Scalar-weight NN: input scalar x; z₁=w₁x; a₁=ReLU(z₁); z₂=w₂a₁; a₂=ReLU(z₂); z₃=a₁+a₂; ŷ=w₃z₃; loss L=½(ŷ−y)². Using R and R′ for ReLU and its derivative, find ∂L/∂w₃, ∂L/∂w₂, ∂L/∂w₁.',
+a:'∂L/∂ŷ = −(y−ŷ).\n∂L/∂w₃ = −(y−ŷ)·z₃.\n∂L/∂w₂ = −(y−ŷ)·w₃·1·R′(z₂)·a₁   (path z₃→a₂→z₂).\n∂L/∂w₁ = sum over both paths:\n  Path 1 (z₃→a₂→z₂→a₁): −(y−ŷ)·w₃·1·R′(z₂)·w₂·R′(z₁)·x\n  Path 2 (z₃→a₁): −(y−ŷ)·w₃·1·R′(z₁)·x'},
+{topic:'Regularization',src:'MT25 Q1',q:'Which are true about Linear Regression and Regularization (select all)?\nA. MSE loss with Linear Regression models is convex.\nB. Regularization is a technique to decrease the training loss of a model.\nC. A regularization term is frequently added to the loss function with a weighting parameter λ.\nD. ℓ1 and ℓ2 regularization both drive some weights to exactly 0.',
+a:'A, C.\n(B False — regularization aims to decrease test/validation loss, at the cost of training loss. D False — only ℓ1 drives weights to exactly 0.)'},
+{topic:'Regularization',src:'MT25 Q8',q:'Linear regression with β=(β₁,β₂)ᵀ and loss L(β,Z) = (1/n)Σ(yᵢ−βᵀxᵢ)² + λR(β). The lecture figure shows MSE contours (solid) and L1 regularizer contours (dashed); as λ goes 0→∞ the solutions snap to the positive β₂ axis.\n(i) Draw a set of MSE contours that would make solutions snap to the negative β₁ axis.\n(ii) Sketch approximate contours for a new regularizer R_new(β) = |β₁|−|β₂|.\n(iii) Sketch the solution trajectory for varying λ applied to R_new(β).',
+a:'(i) Concentric ellipsoids with centroid on the left half-plane and major axis at less than 45° with the β₂ axis. Simplest: rotate the original plot counter-clockwise by 90° — the L1 contours remain the same after the rotation.\n(ii)–(iii) Sketch questions — the official answers are figures in the solutions PDF: contours of |β₁|−|β₂| form an X through the origin, and the trajectory leaves the MSE minimizer toward the nearest arm as λ grows.'},
+{topic:'Train/Val/Test',src:'MT24 Q3',q:'Using a 3-way split (train, val, test): train on train, tune hyperparameters on val, then compute accuracy on each split. Which is most likely true?\nA. Acc_train > Acc_val > Acc_test.\nB. Acc_train < Acc_val < Acc_test.\nC. Acc_train = Acc_val = Acc_test.\nD. Acc_train > Acc_val = Acc_test.',
+a:'A — training accuracy benefits from both fitting and hyperparameter tuning; validation only from tuning; test from neither.'}
+];
 ///DATA__
 
 /* ---------- storage ---------- */
@@ -239,7 +300,9 @@ const fmt=v=>String(v);
 const view=$('#view'),homeBtn=$('#home'),where=$('#where');
 function route(){
   const m=location.hash.match(/^#ex\/(\d+)$/);
-  if(m&&EXS[+m[1]-1])renderEx(+m[1]-1);else renderIndex();
+  if(m&&EXS[+m[1]-1])renderEx(+m[1]-1);
+  else if(location.hash==='#cards')renderCards();
+  else renderIndex();
   scrollTo({top:0});
 }
 addEventListener('hashchange',route);
@@ -260,9 +323,58 @@ function renderIndex(){
       <div class="eqs">${ex.eq}</div>
       <div>${ex.chips.map(c=>`<span class="chip">${esc(c)}</span>`).join('')}</div>
     </button>`}).join('')}</div>
-  <button class="ghost" id="reset" ${done?'':'hidden'}>Reset progress</button>`;
-  view.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>location.hash='#ex/'+b.dataset.go);
+  <button class="ghost" id="reset" ${done?'':'hidden'}>Reset progress</button>
+  <button class="excard fclink" data-go="cards">
+    <div class="no">Also in this app</div>
+    <div class="nm">Exam flashcards →</div>
+    <div class="eqs">${CARDS.length} past-exam questions by topic — click a question to reveal the answer</div>
+    <div><span class="chip">MT25</span><span class="chip">MT24</span><span class="chip">F22</span><span class="chip">verified against official solutions</span></div>
+  </button>`;
+  view.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{
+    location.hash=b.dataset.go==='cards'?'#cards':'#ex/'+b.dataset.go});
   const r=$('#reset');if(r)r.onclick=()=>{if(confirm('Clear all saved progress?')){Object.keys(DB).forEach(k=>delete DB[k]);save();route()}};
+}
+
+/* ---------- flashcards ---------- */
+function renderCards(){
+  homeBtn.hidden=false;homeBtn.onclick=()=>location.hash='';
+  where.textContent='Flashcards';
+  const topics=[...new Set(CARDS.map(c=>c.topic))];
+  view.innerHTML=`<h1>Exam flashcards</h1>
+  <p class="lede">${CARDS.length} past-exam questions grouped by topic. Click a question to reveal its answer; click again to hide it. Every answer is the official solution, double-checked against the source PDFs.</p>
+  <p class="prog">Sources — MT25: Midterm 1 Fall 2025 · MT24: Midterm 1 Fall 2024 · F22: Final Fall 2022</p>
+  ${topics.map((t,ti)=>{
+    const cs=CARDS.map((c,ci)=>({c,ci})).filter(x=>x.c.topic===t);
+    return `<section class="card" id="t${ti}">
+      <h2 style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap">
+        <span>${esc(t)} <span class="cnt">${cs.length} question${cs.length>1?'s':''}</span></span>
+        <button class="ghost rall" data-t="${ti}">Reveal all</button>
+      </h2>
+      ${cs.map(({c,ci})=>`<div class="fc" data-c="${ci}" tabindex="0" role="button" aria-expanded="false">
+        <div class="fcq"><span class="srctag">${esc(c.src)}</span>
+${esc(c.q)}</div>
+        <div class="fca" hidden><b>Answer —</b> ${esc(c.a)}</div>
+      </div>`).join('')}
+    </section>`}).join('')}`;
+  const toggle=el=>{
+    const a=el.querySelector('.fca');
+    a.hidden=!a.hidden;
+    el.setAttribute('aria-expanded',String(!a.hidden));
+  };
+  view.querySelectorAll('.fc').forEach(el=>{
+    el.addEventListener('click',()=>toggle(el));
+    el.addEventListener('keydown',e=>{
+      if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle(el)}});
+  });
+  view.querySelectorAll('.rall').forEach(btn=>{
+    btn.onclick=()=>{
+      const cards=[...view.querySelectorAll(`#t${btn.dataset.t} .fc`)];
+      const anyHidden=cards.some(el=>el.querySelector('.fca').hidden);
+      cards.forEach(el=>{el.querySelector('.fca').hidden=!anyHidden;
+        el.setAttribute('aria-expanded',String(anyHidden))});
+      btn.textContent=anyHidden?'Hide all':'Reveal all';
+    };
+  });
 }
 
 /* ---------- computation graph ---------- */
