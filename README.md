@@ -3,7 +3,7 @@
 [![validate](https://github.com/causius0/5190-practice/actions/workflows/validate.yml/badge.svg)](https://github.com/causius0/5190-practice/actions/workflows/validate.yml)
 [![Live](https://img.shields.io/badge/live-5190--practice.vercel.app-1f7a5c)](https://5190-practice.vercel.app)
 
-Interactive backpropagation practice — 10 exercises that walk you from a single product-and-square up to a mini-batch with shared parameters, plus exam flashcards: 24 past-exam questions grouped by topic, click to reveal the official answers. Built as practice for CIS 5190 (Applied Machine Learning).
+Interactive backpropagation practice — 11 exercises that walk you from a single product-and-square up to a mini-batch with shared parameters and batch normalization, plus exam flashcards: 24 past-exam questions grouped by topic, click to reveal the official answers. Built as practice for CIS 5190 (Applied Machine Learning).
 
 **Live: https://5190-practice.vercel.app**
 
@@ -23,6 +23,11 @@ Interactive backpropagation practice — 10 exercises that walk you from a singl
 | 8 | ℒ = max(0, 1 − y(wx + b)) | SVM hinge loss |
 | 9 | ℒ = −[y log σ(z) + (1−y) log(1−σ(z))] | logistic regression + cross-entropy |
 | 10 | ℒ = ½[(wx₁ + b − y₁)² + (wx₂ + b − y₂)²] | mini-batch: shared w, b accumulate shares |
+| 11 | x̂ᵢ = (xᵢ − μ)/s, s = √(σ² + ε), yᵢ = γx̂ᵢ + β, ℒ = ½Σ(yᵢ − tᵢ)² | batch norm: every input's gradient flows through the batch mean and variance |
+
+## Live demos
+
+`demos.html` has three interactive views of batch norm, ported from the Batch Norm Field Guide: layer inputs drifting during training (with and without BN), a forward pass step by step, and a drag-one-input view with the Jacobian heatmap. It is linked from the exercise index and from exercise 11.
 
 ## How practice works
 
@@ -39,7 +44,8 @@ Interactive backpropagation practice — 10 exercises that walk you from a singl
 
 ## Repo layout
 
-- `index.html` — the entire app. Single file, no dependencies; exercise and flashcard data live inline between `//__DATA__` markers.
+- `demos.html` — the live batch-norm demos (self-contained page, same look as the app).
+- `index.html` — the exercises and flashcards. Single file, no dependencies; exercise and flashcard data live inline between `//__DATA__` markers.
 - `scripts/verify.mjs` — replays the chain rule over every exercise's gradient data. Run it with `node scripts/verify.mjs`.
 - `.github/workflows/validate.yml` — runs that check on every push and PR.
 
