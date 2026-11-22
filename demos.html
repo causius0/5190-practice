@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Batch normalization, live — CIS 5190 practice</title>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,700;1,400;1,700&family=Roboto:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f2f5f9; --surface:#ffffff; --fg:#16202b; --muted:#566678; --line:#d6dee8;
+  --bn:#2563eb; --nobn:#d46a0b; --ok:#15803d;
+  --is:#7c3aed; --st:#0e7c78; --d2:#966a05; 
+  --soft:#e9eef5; --shadow:0 1px 2px rgba(20,35,55,.06),0 6px 20px rgba(20,35,55,.05);
+}
+
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:20px/1.35 "EB Garamond",Georgia,serif;
+  padding-block:20px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main{max-width:940px;margin:0 auto}
+h1,h2,h3{font-family:"EB Garamond",Georgia,serif;text-wrap:balance;line-height:1.2;margin:0}
+h1{font-size:clamp(28px,5vw,40px);font-weight:700;letter-spacing:-.01em}
+h2{font-size:24px;font-weight:700;margin-bottom:6px}
+h3{font-size:15px;font-weight:700;margin:18px 0 6px;letter-spacing:.02em}
+p{margin:.5em 0;max-width:68ch}
+code,.mono{font-family:Roboto,Arial,sans-serif;font-size:.88em}
+section{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;margin:18px 0;box-shadow:var(--shadow);scroll-margin-top:70px}
+.lede{color:var(--muted);max-width:62ch;margin-top:8px}
+.kicker{font:500 12px/1 Roboto;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+nav.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(6px);
+  margin:14px 0 0;padding:8px 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--line)}
+nav.top a{font-size:13px;color:var(--muted);text-decoration:none;padding:4px 8px;border-radius:6px}
+nav.top a:hover{background:var(--soft);color:var(--fg)}
+.legend{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 0}
+.chip{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:6px 12px;font:500 14px Roboto;cursor:pointer;min-height:34px;display:inline-flex;gap:6px;align-items:center}
+.chip i{width:10px;height:10px;border-radius:50%;background:var(--c);display:inline-block}
+.chip[aria-pressed="true"]{border-color:var(--c);box-shadow:inset 0 0 0 1px var(--c)}
+[data-src="IS15"],.c-IS15{--c:var(--is)}[data-src="ST18"],.c-ST18{--c:var(--st)}
+
+.tag{display:inline-block;font:500 11px/1.4 Roboto,Arial,sans-serif;padding:1px 6px;border-radius:5px;margin-right:7px;vertical-align:1px;white-space:nowrap;
+  color:var(--c);background:color-mix(in srgb,var(--c) 13%,transparent);border:1px solid color-mix(in srgb,var(--c) 35%,transparent)}
+ul.pts{list-style:none;margin:10px 0 0;padding:0}
+li.own{padding:7px 0 7px 11px;border-left:3px solid var(--line);margin:6px 0;color:var(--muted)}
+li.pt{padding:7px 0 7px 11px;border-left:3px solid var(--c);margin:6px 0;transition:opacity .25s}
+
+.demo{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px;margin:14px 0}
+.row{display:flex;gap:10px 16px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.row label{font-size:13px;color:var(--muted);display:inline-flex;gap:8px;align-items:center}
+.row label b{color:var(--fg);font-family:Roboto,Arial,sans-serif;font-weight:500;min-width:3.2em;display:inline-block}
+button.b,select{font:500 14px Roboto;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;padding:7px 12px;min-height:36px;cursor:pointer}
+button.b:hover{border-color:var(--bn)}
+button.b[aria-pressed="true"]{background:var(--bn);border-color:var(--bn);color:#fff}
+button.b.alt[aria-pressed="true"]{background:var(--nobn);border-color:var(--nobn)}
+input[type=range]{accent-color:var(--bn);min-width:120px;max-width:100%}
+.svgwrap svg{display:block;width:100%;height:auto;max-width:100%}
+.pair{display:grid;grid-template-columns:1fr;gap:12px;margin:10px 0}
+@media (min-width:720px){.pair{grid-template-columns:1fr 1fr}}
+.pane{min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:6px}
+.pane h4{font:600 12px Roboto,Arial,sans-serif;color:var(--muted);margin:4px 6px}
+.pane svg{display:block;width:100%;height:auto;touch-action:none;user-select:none}
+.jgrid{display:grid;grid-template-columns:1fr;gap:8px 20px;align-items:start}
+@media (min-width:760px){.jgrid{grid-template-columns:minmax(0,440px) minmax(0,1fr)}}
+.jexp{min-width:0;font-size:14px;line-height:1.5}.jexp p{margin:0 0 .6em;font-size:1em}.jexp .card{margin:0 0 .6em;padding:.6em .8em}.jexp .card small{font-size:.85em}.jexp .card p{margin:.2em 0 0}.jexp>:last-child{margin-bottom:0}
+.hmwrap{max-width:460px}.hmwrap svg{display:block;width:100%;height:auto}
+.svgwrap{overflow-x:auto}
+.svgwrap svg{min-width:520px}
+svg text{font-family:Roboto,Arial,sans-serif;fill:var(--muted);font-size:11px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:10px 0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.card small{color:var(--muted);display:block;font-size:12px}
+.card b{font:500 17px Roboto,Arial,sans-serif}
+.card.bn b{color:var(--bn)}.card.nb b{color:var(--nobn)}
+.note{font-size:13px;color:var(--muted);border-left:3px solid var(--line);padding:2px 0 2px 10px;margin:10px 0}
+.warn{border-left-color:var(--line)}
+.eq{overflow-x:auto;background:var(--soft);border-radius:8px;padding:4px 14px;margin:10px 0}
+.eq mjx-container{color:var(--fg);margin:.4em 0!important;font-size:90%!important}
+.eq-plain{display:none;margin:0}
+body.noMJ .eq-tex{display:none}body.noMJ .eq-plain{display:block}
+pre{background:var(--soft);border-radius:8px;padding:10px 12px;overflow-x:auto;font:500 12.5px/1.6 Roboto,Arial,sans-serif;margin:8px 0}
+.dot{transition:transform .8s cubic-bezier(.3,.7,.2,1)}
+.edge{fill:none;stroke-width:2;stroke-dasharray:6 6;animation:flow 1s linear infinite}
+.edge.rev{animation-direction:reverse}
+@keyframes flow{to{stroke-dashoffset:-12}}
+table{border-collapse:collapse;width:100%;font-size:13px;min-width:560px}
+th,td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:top}
+th{font-size:12px;color:var(--muted);font-weight:600}
+.tw{overflow-x:auto}
+.grid{display:grid;gap:4px;max-width:420px}
+.cell{aspect-ratio:1.4;border-radius:5px;background:var(--soft);border:1px solid var(--line);cursor:pointer;transition:background .25s,border-color .25s}
+.cell.on{background:color-mix(in srgb,var(--bn) 40%,var(--surface));border-color:var(--bn)}
+.idx h3{display:flex;align-items:center;gap:8px}
+.idx ul{margin:4px 0 0;padding-left:18px;font-size:13.5px}
+.idx a{color:var(--fg);text-decoration-color:var(--line)}
+.bar{height:8px;border-radius:4px;background:var(--bn);display:inline-block;vertical-align:middle;min-width:1px;transition:width .4s}
+@media (prefers-reduced-motion:reduce){.dot,.cell,.bar,li.pt{transition:none}.edge{animation:none}}
+/* deck look */
+:root{--bg:#fff;--surface:#f7f7f7;--fg:#1a1a1a;--muted:#595959;--line:#dce3ee;--bn:#011f5b;--nobn:#b85410;--ok:#1f7a5c;--soft:#eef2f8;--shadow:none;color-scheme:light}
+body{background:#fff}
+main{max-width:980px}
+h1{font-size:clamp(32px,5vw,48px);font-weight:700;color:#011f5b}
+h2{font-size:28px;color:#011f5b}
+h3{color:#990000}
+section{border:2px solid var(--line);border-left:10px solid #990000;border-radius:0}
+.demo{background:#fff;border:2px solid var(--line);border-radius:0}
+.pane,.card,.chip,.eq,pre,button.b,select,.cell,.tag{border-radius:0}
+.card{background:#fff}
+button.b{font-family:Roboto,Arial,sans-serif}
+.eq{background:#fcf3cc;border:2px solid #f2c100}
+.note{border-left-color:#990000}
+nav.top a{color:#011f5b;font-family:Roboto,Arial,sans-serif}
+a{color:#011f5b}
+.foot{margin:28px 0 0;font:500 13px Roboto,Arial,sans-serif;color:var(--muted);text-align:right}
+.back{font:500 14px Roboto,Arial,sans-serif}
+
+</style>
+</head>
+<body>
+<!-- Live demos: ported from the Batch Norm Field Guide (same code, deck styling). Part of the practice app: see index.html. -->
+<script>window.MathJax={tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]},svg:{fontCache:'global'},options:{enableMenu:false}};</script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.js"></script>
+<main>
+<p class="back"><a href="index.html">← Practice exercises</a></p>
+<div class="kicker">CIS 5190 · Live demos</div>
+<h1>Batch normalization, live</h1>
+<p class="lede">Three interactive views of what batch norm does: layer inputs drifting during training, one forward pass step by step, and what happens to every output when you move a single input. Then try the backward pass by hand in <a href="index.html#ex/11">exercise 11</a>.</p>
+<nav class="top" aria-label="Sections">
+  <a href="#ics">1 · Drift</a><a href="#fwd">2 · Forward</a><a href="#bwd">3 · Backward</a><a href="index.html#ex/11">Practice exercise 11</a>
+</nav>
+<section id="ics">
+  <h2>1 · Internal covariate shift: watch it happen in a real tiny network</h2>
+  <p>A 2→5→5→5→5→1 tanh network learns a toy task. Each frame is a snapshot during training, taken every 4 weight updates. Circles hold the activation of one fixed sample; the histograms show every layer's tanh input over 64 fixed samples.</p>
+  <div class="demo">
+    <div class="row">
+      <button class="b alt" id="icsPlain" aria-pressed="true">No BN</button>
+      <button class="b" id="icsBN" aria-pressed="false">With BN</button>
+      <button class="b" id="icsNoise" aria-pressed="false">BN + random scale/offset after (ST18-style)</button>
+    </div>
+    <div class="row">
+      <button class="b" id="icsPlay">Play</button>
+      <label>training step <input type="range" id="icsT" min="0" max="60" step="1" value="0"><b id="icsTv">0</b></label>
+      <label>sample shown <input type="range" id="icsS" min="1" max="64" step="1" value="1"><b id="icsSv">1</b></label>
+      <label>play speed <select id="icsSpeed"><option value="0.1">0.1× (very slow)</option><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select></label>
+    </div>
+    <div class="row"><span style="font-size:13px;color:var(--muted)">Inside one training step:</span><button class="b" id="icsFwdGo">▶ Forward pass, layer by layer</button><button class="b" id="icsFwdNext">Next layer</button><button class="b" id="icsFwdAll">Show all</button></div>
+    <p class="mono" id="icsFwd" style="font-size:12px;color:var(--muted);margin:2px 0 8px"></p>
+    <div class="svgwrap"><svg id="icsSvg" viewBox="0 0 760 430" role="img" aria-label="Feedforward network with activations in neurons, and histograms and time strips of each layer's input distribution"></svg></div>
+    <div class="row" style="font-size:13px;color:var(--muted)"><span>edges: <b style="color:var(--bn)">blue</b> positive weight, <b style="color:var(--nobn)">orange</b> negative, thicker = larger</span><span>dashed outline = distribution at step 0</span></div>
+    <div class="cards">
+      <div class="card"><small>eval loss (same 64 points)</small><b id="icsLoss">–</b></div>
+      <div class="card"><small>eval accuracy (64 fixed points, p &gt; 0.5 = class 1)</small><b id="icsAcc">–</b></div>
+    </div>
+    <p id="icsCap" class="note"></p>
+    <p class="note warn">A real, seeded run of my own small network (SGD, lr 0.35, batch 32, task: is x₁·x₂ positive), not a figure from any paper. The 64 evaluation points never change, so any change in a layer's distribution comes from weight updates.</p>
+  </div>
+  <ul class="pts">
+    <li class="own">The step axis is training time. One forward pass has no drift because the weights are fixed while it runs. Drift appears across passes: every update changes earlier layers, so the next batch reaches layer k with a different distribution.</li>
+    <li class="pt" data-src="IS15"><span class="tag">IS15 · §1, §2</span>Internal covariate shift: the distribution of a layer's inputs changes during training because earlier layers' parameters change. BN is introduced to reduce it.</li>
+    <li class="pt" data-src="ST18"><span class="tag">ST18 · §2.1, Fig 1</span>Injecting noise after BN (non-zero mean, non-unit variance, changing over time) barely hurts training, so stable input distributions are not what makes BN work.</li>
+    <li class="pt" data-src="ST18"><span class="tag">ST18 · §2.2, Def 2.1</span>A gradient-based version of ICS (how much a layer's gradient changes after earlier layers update) is often not reduced by BN.</li>
+  </ul>
+</section>
+
+<!-- 2 Forward -->
+<section id="fwd">
+  <h2>2 · Forward pass: standardize, then rescale</h2>
+  <p>One feature across a mini-batch of <span class="mono">m</span> samples. Step through the four moves and watch the points travel.</p>
+  <div class="demo">
+    <div class="row">
+      <label>batch size m <input type="range" id="fM" min="2" max="8" step="1" value="6"><b id="fMv">6</b></label>
+      <label>γ <input type="range" id="fG" min="0.2" max="4" step="0.01" value="1"><b id="fGv">1.00</b></label>
+      <label>β <input type="range" id="fB" min="-3" max="4" step="0.01" value="0"><b id="fBv">0.00</b></label>
+      <button class="b" id="fUndo">Undo normalization (γ=s, β=μ)</button>
+    </div>
+    <div class="row" id="fStages"></div>
+    <div class="row"><button class="b" id="fPrev">◀ Back</button><button class="b" id="fNext">Next ▶</button><button class="b" id="fPlay">Play all</button></div>
+    <div class="svgwrap"><svg id="fSvg" viewBox="0 0 640 170" role="img" aria-label="Batch values on a number line moving through BN stages"></svg></div>
+    <div class="cards">
+      <div class="card"><small>batch mean μ</small><b id="fMu">–</b></div>
+      <div class="card"><small>batch variance σ²</small><b id="fVar">–</b></div>
+      <div class="card"><small>s = √(σ²+ε)</small><b id="fS">–</b></div>
+      <div class="card bn"><small>current mean / std of points</small><b id="fCur">–</b></div>
+    </div>
+    <p id="fCap" style="min-height:3em"></p>
+  </div>
+  <h3><span class="tag c-IS15">IS15 · §3, Alg. 1</span>Batch normalizing transform (Ioffe &amp; Szegedy 2015)</h3>
+  <div class="eq"><div class="eq-tex">\[\begin{aligned}
+\mu_B &= \frac{1}{m}\sum_{i=1}^{m} x_i &&\text{mean of the batch} \\
+\sigma_B^2 &= \frac{1}{m}\sum_{i=1}^{m} (x_i-\mu_B)^2 &&\text{variance (spread) of the batch} \\
+\hat{x}_i &= \frac{x_i-\mu_B}{\sqrt{\sigma_B^2+\epsilon}} &&\text{normalize; } \epsilon\text{ keeps the denominator away from 0} \\
+y_i &= \gamma\,\hat{x}_i+\beta &&\text{scale and shift with learned } \gamma,\beta \\[10pt]
+\gamma &= \sqrt{\mathrm{Var}[x]} &&\text{with these two values } y_i=x_i\text{: BN is undone} \\
+\beta &= \mathrm{E}[x]
+\end{aligned}\]</div><pre class="eq-plain">μ_B  = (1/m) Σ x_i                 mean of the batch
+σ²_B = (1/m) Σ (x_i − μ_B)²        variance (spread) of the batch
+x̂_i  = (x_i − μ_B) / √(σ²_B + ε)   normalize; ε keeps the denominator away from 0
+y_i  = γ · x̂_i + β                 scale and shift with learned γ, β
+
+γ = √Var[x]   with these two values y_i = x_i: BN is undone
+β = E[x]</pre></div>
+  <ul class="pts">
+  </ul>
+</section>
+
+<!-- 3 Backward -->
+<section id="bwd">
+  <h2>3 · Backward pass: where samples start sharing gradients</h2>
+  <p>Two linked views. Drag any input in the first box and watch every output move. The second box is the matrix that records those effects, and the backward pass uses the same matrix.</p>
+
+  <div class="demo">
+    <h3 style="margin-top:0">Drag one observation’s input: every output moves</h3>
+    <div class="row">
+      <button class="b alt" id="cNo" aria-pressed="false">No BN</button>
+      <button class="b" id="cBn" aria-pressed="true">With BN</button>
+      <label>batch size m <input type="range" id="cM" min="2" max="8" step="1" value="6"><b id="cMv">6</b></label>
+      <label>γ <input type="range" id="cG" min="0.3" max="3" step="0.01" value="1"><b id="cGv">1.00</b></label>
+      <label>β <input type="range" id="cB" min="-2" max="3" step="0.01" value="0"><b id="cBv">0.00</b></label>
+      <button class="b" id="cReset">Reset batch</button>
+    </div>
+    <div class="pair">
+      <div class="pane"><h4>Output vs input (each dot is one observation in the batch)</h4><svg id="cSvg" viewBox="0 0 340 320" role="img" aria-label="Scatter of BN output against input for each sample, with draggable points"></svg></div>
+      <div class="pane"><h4>Inputs on top, outputs below</h4><svg id="nlSvg" viewBox="0 0 340 320" role="img" aria-label="Two number lines linking each input to its output, with draggable inputs"></svg></div>
+    </div>
+    <div class="cards">
+      <div class="card"><small>batch mean μ</small><b id="cMu">–</b></div>
+      <div class="card"><small>s = √(σ²+ε)</small><b id="cS">–</b></div>
+      <div class="card bn"><small>slope of the line (γ/s)</small><b id="cSl">–</b></div>
+    </div>
+    <p id="cMove" class="note" style="min-height:2.6em"></p>
+    <p id="cCap" class="note"></p>
+  </div>
+
+  <div class="demo">
+    <h3 style="margin-top:0">The Jacobian: who affects whom</h3>
+    <div class="row">
+      <button class="b alt" id="jNo" aria-pressed="false">No BN</button>
+      <button class="b" id="jBn" aria-pressed="true">With BN</button>
+      <span style="font-size:13px;color:var(--muted)">One neuron, the same batch as the box above. Drag a point there and this grid updates.</span>
+    </div>
+    <div class="jgrid">
+    <div class="hmwrap"><svg id="jSvg" viewBox="0 0 420 420" role="img" aria-label="Heatmap of the BN Jacobian, outputs by inputs"></svg></div>
+    <div class="jexp">
+      <p><b>One neuron, a batch of m observations.</b> Every observation has an input x (what this neuron feeds into BN) and an output y (what BN returns). Each cell pairs two observations from the same batch: column j is the one whose input you change, row i is the one whose output you watch. Cell (i, j) = ∂y<sub>i</sub>/∂x<sub>j</sub>: how much observation i's output moves when observation j's input moves. When i = j it is the same observation. Diagonal cells (dashed outline) are an observation's effect on its own output; off-diagonal cells are one observation's effect on another observation's output.</p>
+      <div class="card" id="jCardNo"><small>Without BN</small><p>Each observation passes through on its own (y<sub>i</sub> = x<sub>i</sub>), so the diagonal is 1 and every off-diagonal cell is 0: observations never affect each other.</p></div>
+      <div class="card" id="jCardBn"><small>With BN</small><p>Every observation's output uses the batch mean and variance, so every cell is non-zero. The diagonal is a bit below γ/s. Off-diagonal cells, −(γ/s)(1 + x̂<sub>i</sub>x̂<sub>j</sub>)/m, are small and usually negative: raising one observation's input lifts the mean and pulls the other outputs down. A cell turns positive when the two observations sit far apart on opposite sides of the mean (x̂<sub>i</sub>x̂<sub>j</sub> &lt; −1).</p></div>
+      <p>A layer with many neurons has one matrix like this per neuron. BN never mixes neurons, only observations.</p>
+    </div>
+    </div>
+    <p class="note">Click a cell to see where its value comes from.</p>
+    <div class="tw"><table id="jDet"></table></div>
+    <p class="note">Backward pass: ∂ℓ/∂xⱼ = Σᵢ ∂ℓ/∂yᵢ · Jᵢⱼ. Read down column j: the gradient reaching input j collects a share from every output. The off-diagonal cells are the cross-sample gradients. Without BN they are all zero.</p>
+    <p class="note">With BN every row and every column sums to 0. Rows: shifting all inputs by the same amount changes no output, because BN subtracts the mean. Columns: moving one input never changes the total of the outputs, which stays m·β. The row sums are also why the input gradients always add up to 0.</p>
+    <p class="note"><span class="tag c-IS15">IS15 · §2</span>Backprop through normalization needs the Jacobian with respect to the whole batch, not just the observation itself. The cell formula Jᵢⱼ = (γ/s)(δᵢⱼ − 1/m − x̂ᵢx̂ⱼ/m) is my own algebra from IS15's chain rule, and the table checks it against a finite-difference derivative.</p>
+  </div>
+
+<div class="eq"><div class="eq-tex">\[\begin{aligned}
+\frac{\partial \ell}{\partial \hat{x}_i} &= \frac{\partial \ell}{\partial y_i}\,\gamma \\[6pt]
+\frac{\partial \ell}{\partial \sigma_B^2} &= \sum_{i=1}^{m}\frac{\partial \ell}{\partial \hat{x}_i}\,(x_i-\mu_B)\cdot\left(-\tfrac{1}{2}\right)(\sigma_B^2+\epsilon)^{-3/2} \\[6pt]
+\frac{\partial \ell}{\partial \mu_B} &= \left(\sum_{i=1}^{m}\frac{\partial \ell}{\partial \hat{x}_i}\cdot\frac{-1}{\sqrt{\sigma_B^2+\epsilon}}\right)+\frac{\partial \ell}{\partial \sigma_B^2}\cdot\frac{\sum_{i=1}^{m}-2(x_i-\mu_B)}{m} \\[6pt]
+\frac{\partial \ell}{\partial x_i} &= \frac{\partial \ell}{\partial \hat{x}_i}\cdot\frac{1}{\sqrt{\sigma_B^2+\epsilon}}+\frac{\partial \ell}{\partial \sigma_B^2}\cdot\frac{2(x_i-\mu_B)}{m}+\frac{\partial \ell}{\partial \mu_B}\cdot\frac{1}{m} \\[6pt]
+\frac{\partial \ell}{\partial \gamma} &= \sum_{i=1}^{m}\frac{\partial \ell}{\partial y_i}\,\hat{x}_i \\[6pt]
+\frac{\partial \ell}{\partial \beta} &= \sum_{i=1}^{m}\frac{\partial \ell}{\partial y_i}
+\end{aligned}\]</div><pre class="eq-plain">∂ℓ/∂x̂_i = ∂ℓ/∂y_i · γ
+∂ℓ/∂σ²  = Σ_i ∂ℓ/∂x̂_i · (x_i − μ) · (−½)(σ²+ε)^(−3/2)
+∂ℓ/∂μ   = (Σ_i ∂ℓ/∂x̂_i · (−1/√(σ²+ε))) + ∂ℓ/∂σ² · Σ_i(−2(x_i−μ))/m
+∂ℓ/∂x_i = ∂ℓ/∂x̂_i / √(σ²+ε) + ∂ℓ/∂σ² · 2(x_i−μ)/m + ∂ℓ/∂μ · 1/m
+∂ℓ/∂γ   = Σ_i ∂ℓ/∂y_i · x̂_i
+∂ℓ/∂β   = Σ_i ∂ℓ/∂y_i</pre></div>
+  <p class="note"><span class="tag c-IS15">IS15 · §3</span>The block above is the paper's chain rule. Terms 2 and 3 of ∂ℓ/∂x_i are the cross-sample part: σ² and μ are sums over the batch.</p>
+  <div class="eq"><div class="eq-tex">\[\begin{aligned}
+g_i &= \gamma\,\frac{\partial \ell}{\partial y_i}, \qquad s=\sqrt{\sigma_B^2+\epsilon} \\[6pt]
+\frac{\partial \ell}{\partial x_i} &= \frac{1}{m\,s}\Big(m\,g_i-\sum_{j=1}^{m} g_j-\hat{x}_i\sum_{j=1}^{m} g_j\,\hat{x}_j\Big)
+\end{aligned}\]</div><pre class="eq-plain">g_i = γ · ∂ℓ/∂y_i,     s = √(σ²+ε)
+∂ℓ/∂x_i = (1 / (m·s)) · ( m·g_i − Σ_j g_j − x̂_i · Σ_j g_j x̂_j )</pre></div>
+  <p class="note warn">Compact form is my algebra, not printed in IS15 or ST18. I checked it against the paper's three-term form (agreement ~1e-15) and against finite differences (~2e-9) on a seeded batch of 6.</p>
+
+  <ul class="pts">
+    <li class="pt" data-src="IS15"><span class="tag">IS15 · §3 after Alg. 1</span>Explicit backward formulas for ∂ℓ/∂x̂, ∂ℓ/∂σ², ∂ℓ/∂μ, ∂ℓ/∂x_i, ∂ℓ/∂γ, ∂ℓ/∂β (block above).</li>
+    <li class="pt" data-src="IS15"><span class="tag">IS15 · §2</span>Backprop through normalization needs the Jacobian with respect to the observation and with respect to the whole set. Ignoring the second leads to blow-up (their bias-update observation).</li>
+    <li class="pt" data-src="ST18"><span class="tag">ST18 · §4.2, Thm 4.1</span>Indirect: bounds the gradient norm with a γ²/σ_j² factor and subtracts the components of the gradient along the all-ones direction and along ŷ. Same structure as the projection read below.</li>
+    <li class="pt" data-src="ST18"><span class="tag">ST18 · §4.2, Thm 4.2</span>Analogous bound for the Hessian quadratic form.</li>
+    <li class="own">Σ_i ∂ℓ/∂x_i = 0 exactly: BN's backward pass removes the all-ones direction from the incoming gradient.</li>
+    <li class="own">Σ_i x̂_i ∂ℓ/∂x_i = 0 only in the limit ε → 0 (residual scales like ε/(σ²+ε)).</li>
+    <li class="own">Reading: BN's backward acts like projecting the upstream gradient away from "all ones" and "along x̂" within the batch, consistent in spirit with ST18 Thm 4.1.</li>
+    <li class="own">With BN every off-diagonal cell of the Jacobian is non-zero; without BN they are all zero. Those off-diagonal cells are the cross-sample gradients.</li>
+  </ul>
+</section>
+<p class="foot">CIS 5190 · Applied Machine Learning · Backward pass practice</p>
+</main>
+<script>
+(function(){
+"use strict";
+var RM = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+var NS = "http://www.w3.org/2000/svg";
+function $(s){return document.querySelector(s)}
+function el(tag, attrs, parent){var e=document.createElementNS(NS,tag);for(var k in attrs){e.setAttribute(k,attrs[k])}if(parent)parent.appendChild(e);return e}
+function fx(v,d){if(d===undefined)d=2;var s=v.toFixed(d);return s==="-0.00"?"0.00":(Math.abs(v)<1e-4&&v!==0&&d<=3?v.toExponential(1):s)}
+function sci(v){return Math.abs(v)<1e-3&&v!==0?v.toExponential(1):v.toFixed(3)}
+function tween(ms, fn, done){
+  if(RM){fn(1);if(done)done();return}
+  var t0=performance.now();
+  (function step(now){var t=Math.min(1,(now-t0)/ms);var e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;fn(e);if(t<1)requestAnimationFrame(step);else if(done)done()})(t0);
+}
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function gauss(r){var u=1-r(),v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+
+
+/* equation fallback if MathJax did not load */
+window.addEventListener("load",function(){setTimeout(function(){if(!document.querySelector(".eq mjx-container"))document.body.classList.add("noMJ")},6000)});
+/* legend focus */
+document.querySelectorAll(".chip").forEach(function(c){
+  c.addEventListener("click",function(){
+    var on=c.getAttribute("aria-pressed")==="true";
+    document.querySelectorAll(".chip").forEach(function(o){o.setAttribute("aria-pressed","false")});
+    if(on){delete document.body.dataset.focus}else{c.setAttribute("aria-pressed","true");document.body.dataset.focus=c.dataset.f}
+  });
+});
+
+/* shared toy batch */
+var BASE=[3.1,1.2,4.6,2.4,0.5,3.8,5.2,1.9];
+var DY=[0.4,-0.7,0.2,0.9,-0.3,0.5,-0.6,0.1];
+function stats(xs,eps){var m=xs.length,mu=0,i;for(i=0;i<m;i++)mu+=xs[i];mu/=m;var v=0;for(i=0;i<m;i++)v+=(xs[i]-mu)*(xs[i]-mu);v/=m;return{m:m,mu:mu,v:v,s:Math.sqrt(v+eps)}}
+
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function gauss(r){var u=1-r(),v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+function simulate(mode,opt){
+  opt=opt||{};opt.lr=opt.lr||0.35;
+  var H=5,L=4,STEPS=opt.steps||240,EVERY=4,LR=opt.lr||0.5,B=32,NE=64,EPS=1e-5;
+  var r=mulberry32(opt.seed||11);
+  var data=[];for(var i=0;i<256;i++){var x1=r()*2-1,x2=r()*2-1;data.push({x:[x1,x2],y:(x1*x2>0)?1:0})}
+  var ev=data.slice(0,NE);
+  var sizes=[2];for(var l=0;l<L;l++)sizes.push(H);sizes.push(1);
+  var W=[],b=[],ga=[],be=[];
+  for(l=0;l<=L;l++){var fi=sizes[l],fo=sizes[l+1],w=[];for(var j=0;j<fo;j++){var row=[];for(var k=0;k<fi;k++)row.push(gauss(r)*(opt.init||1.0)/Math.sqrt(fi));w.push(row)}W.push(w);b.push(new Array(fo).fill(0));ga.push(new Array(fo).fill(1));be.push(new Array(fo).fill(0))}
+  var nr=mulberry32(777);
+  function noiseFor(){var n=[];for(var l=0;l<L;l++){var s=[],o=[];for(var j=0;j<H;j++){s.push(Math.exp(0.6*gauss(nr)));o.push(0.9*gauss(nr))}n.push({s:s,o:o})}return n}
+  function fwd(X,noise){
+    var m=X.length,A=[X.map(function(x){return x.slice()})],Zs=[],Xh=[],S=[];
+    for(var l=0;l<=L;l++){
+      var out=A[l],fo=sizes[l+1],U=[];
+      for(var i=0;i<m;i++){var u=[];for(var j=0;j<fo;j++){var s=(l<L&&mode!=="plain")?0:b[l][j];for(var k=0;k<sizes[l];k++)s+=W[l][j][k]*out[i][k];u.push(s)}U.push(u)}
+      if(l===L){Zs.push(U);A.push(U.map(function(u){return[1/(1+Math.exp(-u[0]))]}));break}
+      var Y=U,xh=null,sv=null;
+      if(mode!=="plain"){xh=[];sv=[];var Yn=U.map(function(){return[]});
+        for(j=0;j<fo;j++){var mu=0;for(i=0;i<m;i++)mu+=U[i][j];mu/=m;var v=0;for(i=0;i<m;i++)v+=(U[i][j]-mu)*(U[i][j]-mu);v/=m;var sd=Math.sqrt(v+EPS);sv.push(sd);
+          for(i=0;i<m;i++){var h=(U[i][j]-mu)/sd;(xh[i]=xh[i]||[]).push(h);Yn[i].push(ga[l][j]*h+be[l][j])}}
+        Y=Yn}
+      if(mode==="noise"&&noise){Y=Y.map(function(row){return row.map(function(v,j){return noise[l].s[j]*v+noise[l].o[j]})})}
+      Zs.push(Y);Xh.push(xh);S.push(sv);
+      A.push(Y.map(function(row){return row.map(Math.tanh)}));
+    }
+    return{A:A,Z:Zs,Xh:Xh,S:S};
+  }
+  function loss(X,Yl,f){var s=0,c=0;for(var i=0;i<X.length;i++){var p=f.A[L+1][i][0];s+=-(Yl[i]*Math.log(p+1e-9)+(1-Yl[i])*Math.log(1-p+1e-9));if((p>.5?1:0)===Yl[i])c++}return{loss:s/X.length,acc:c/X.length}}
+  function step(batch,noise){
+    var X=batch.map(function(d){return d.x}),Yl=batch.map(function(d){return d.y}),m=X.length;
+    var f=fwd(X,noise),dA=f.A[L+1].map(function(p,i){return[(p[0]-Yl[i])/m]});
+    for(var l=L;l>=0;l--){
+      var fo=sizes[l+1],fi=sizes[l],dU;
+      if(l===L){dU=dA}else{
+        var dY=dA.map(function(row,i){return row.map(function(g,j){var a=f.A[l+1][i][j];var d=g*(1-a*a);if(mode==="noise"&&noise)d*=noise[l].s[j];return d})});
+        if(mode==="plain"){dU=dY}else{
+          dU=dY.map(function(){return new Array(fo).fill(0)});
+          for(var j=0;j<fo;j++){var Sg=0,Sgx=0,dg=0,db=0;
+            for(var i=0;i<m;i++){var g=ga[l][j]*dY[i][j];Sg+=g;Sgx+=g*f.Xh[l][i][j];dg+=dY[i][j]*f.Xh[l][i][j];db+=dY[i][j]}
+            for(i=0;i<m;i++){g=ga[l][j]*dY[i][j];dU[i][j]=(m*g-Sg-f.Xh[l][i][j]*Sgx)/(m*f.S[l][j])}
+            ga[l][j]-=LR*dg;be[l][j]-=LR*db}}
+      }
+      var dPrev=[];for(i=0;i<m;i++){var row=new Array(fi).fill(0);for(j=0;j<fo;j++)for(var k=0;k<fi;k++)row[k]+=dU[i][j]*W[l][j][k];dPrev.push(row)}
+      for(j=0;j<fo;j++){for(k=0;k<fi;k++){var gw=0;for(i=0;i<m;i++)gw+=dU[i][j]*f.A[l][i][k];W[l][j][k]-=LR*gw}
+        if(!(l<L&&mode!=="plain")){var gb=0;for(i=0;i<m;i++)gb+=dU[i][j];b[l][j]-=LR*gb}}
+      dA=dPrev;
+    }
+  }
+  var frames=[];
+  function snap(t,noise){
+    var f=fwd(ev.map(function(d){return d.x}),noise),ls=loss(ev.map(function(d){return d.x}),ev.map(function(d){return d.y}),f);
+    frames.push({t:t,Z:f.Z.slice(0,L),A:f.A.slice(1,L+2),W:W.map(function(w){return w.map(function(r){return r.slice()})}),loss:ls.loss,acc:ls.acc});
+  }
+  var nz=noiseFor();snap(0,nz);
+  for(var t=1;t<=STEPS;t++){nz=noiseFor();var bt=[];for(var q=0;q<B;q++)bt.push(data[Math.floor(r()*data.length)]);step(bt,nz);if(t%EVERY===0)snap(t,nz)}
+  return{frames:frames,ev:ev};
+}
+
+/* ---------- 1. ICS (real tiny network) ---------- */
+(function(){
+  var SIMS={plain:simulate("plain"),bn:simulate("bn"),noise:simulate("noise")};
+  var L=4,H=5,BINS=16,LO=-4,HI=4,mode="plain",fi=0,playing=false,samp=0,rev=5,fwdTimer=null;
+  var svg=$("#icsSvg");
+  var CX=[175,315,455,595],IX=45,OX=715;
+  function ny(n,j){return 114+(j-(n-1)/2)*34}
+  function pct(a,p){var s=a.slice().sort(function(x,y){return x-y});return s[Math.min(s.length-1,Math.floor(p*(s.length-1)+0.5))]}
+  /* per-frame stats */
+  Object.keys(SIMS).forEach(function(k){
+    SIMS[k].frames.forEach(function(f){
+      f.st=f.Z.map(function(Zl){
+        var v=[];Zl.forEach(function(r){r.forEach(function(x){v.push(x)})});
+        var mu=0;v.forEach(function(x){mu+=x});mu/=v.length;var sd=0;v.forEach(function(x){sd+=(x-mu)*(x-mu)});sd=Math.sqrt(sd/v.length);
+        var h=new Array(BINS).fill(0);v.forEach(function(x){var b=Math.floor((Math.max(LO,Math.min(HI-1e-9,x))-LO)/(HI-LO)*BINS);h[b]++});
+        return{mu:mu,sd:sd,p15:pct(v,.15),p50:pct(v,.5),p85:pct(v,.85),h:h.map(function(c){return c/v.length})};
+      });
+    });
+  });
+  var edges=[],nodes=[],txt=[],bars=[],ghosts=[],bands=[],meds=[],curs=[],stT=[],stD=[];
+  function build(){
+    while(svg.firstChild)svg.removeChild(svg.firstChild);
+    edges=[];nodes=[];txt=[];bars=[];ghosts=[];bands=[];meds=[];curs=[];stT=[];stD=[];
+    var sizes=[2,H,H,H,H,1],xs=[IX].concat(CX).concat([OX]);
+    var heads=["input x","layer 1","layer 2","layer 3","layer 4","output p"];
+    heads.forEach(function(h,i){var t=el("text",{x:xs[i],y:16,"text-anchor":"middle"},svg);t.textContent=h});
+    for(var l=0;l<=L;l++){
+      var e=[];
+      for(var j=0;j<sizes[l+1];j++)for(var k=0;k<sizes[l];k++){
+        e.push({j:j,k:k,n:el("line",{x1:xs[l]+14,y1:ny(sizes[l],k),x2:xs[l+1]-14,y2:ny(sizes[l+1],j)},svg)});
+      }
+      edges.push(e);
+    }
+    for(l=0;l<=L+1;l++){
+      var ns=[],ts=[];
+      for(j=0;j<sizes[l];j++){
+        ns.push(el("circle",{cx:xs[l],cy:ny(sizes[l],j),r:15,stroke:"var(--fg)","stroke-opacity":".4","stroke-width":1.2},svg));
+        var t=el("text",{x:xs[l],y:ny(sizes[l],j)+3.5,"text-anchor":"middle"},svg);t.style.fill="var(--fg)";t.style.fontSize="10px";t.style.fontWeight="600";ts.push(t);
+      }
+      nodes.push(ns);txt.push(ts);
+    }
+    /* histograms + time strips */
+    for(l=0;l<L;l++){
+      var x0=CX[l]-60,w=120,hy=292,hh=64;
+      var bl=[];
+      el("line",{x1:x0,x2:x0+w,y1:hy,y2:hy,stroke:"var(--muted)"},svg);
+      el("line",{x1:CX[l],x2:CX[l],y1:hy-hh,y2:hy,stroke:"var(--line)","stroke-dasharray":"2 3"},svg);
+      var tl=el("text",{x:x0,y:hy+11},svg);tl.textContent="−4";
+      var tr=el("text",{x:x0+w,y:hy+11,"text-anchor":"end"},svg);tr.textContent="4";
+      for(var b=0;b<BINS;b++)bl.push(el("rect",{x:x0+b*w/BINS+0.5,width:w/BINS-1,rx:1,fill:"var(--nobn)","fill-opacity":".7"},svg));
+      bars.push(bl);
+      ghosts.push(el("path",{fill:"none",stroke:"var(--muted)","stroke-dasharray":"3 2","stroke-width":1.2},svg));
+      var hl=el("text",{x:CX[l],y:hy+24,"text-anchor":"middle"},svg);hl.textContent="tanh input, now";
+      stD.push(el("text",{x:CX[l],y:hy+38,"text-anchor":"middle"},svg));
+      /* strip */
+      var sy0=345,sh=48;
+      el("rect",{x:x0,y:sy0,width:w,height:sh,rx:4,fill:"none",stroke:"var(--line)"},svg);
+      el("line",{x1:x0,x2:x0+w,y1:sy0+sh/2,y2:sy0+sh/2,stroke:"var(--line)","stroke-dasharray":"2 3"},svg);
+      bands.push(el("path",{fill:"var(--nobn)","fill-opacity":".28",stroke:"none"},svg));
+      meds.push(el("path",{fill:"none",stroke:"var(--nobn)","stroke-width":1.8},svg));
+      curs.push(el("line",{y1:sy0,y2:sy0+sh,stroke:"var(--fg)","stroke-width":1.2},svg));
+      var sl=el("text",{x:CX[l],y:sy0+sh+13,"text-anchor":"middle"},svg);sl.textContent="15–85% band, all steps";
+      stT.push(el("text",{x:CX[l],y:sy0+sh+27,"text-anchor":"middle"},svg));
+    }
+  }
+  function col(a){return a>=0?"var(--bn)":"var(--nobn)"}
+  function draw(){
+    var S=SIMS[mode],f=S.frames[fi],f0=S.frames[0],fp=S.frames[Math.max(0,fi-1)],c=mode==="plain"?"var(--nobn)":"var(--bn)";
+    /* weights */
+    f.W.forEach(function(Wl,l){edges[l].forEach(function(e){var w=Wl[e.j][e.k];e.n.setAttribute("stroke",col(w));e.n.setAttribute("stroke-width",Math.min(3,0.3+Math.abs(w)*1.5).toFixed(2));e.n.setAttribute("stroke-opacity",(l+1>rev)?".05":((l+1===rev)?".9":".4"))})});
+    /* activations of one sample: A[0..L] hidden activations, A[L+1] output */
+    var xin=S.ev[samp].x;
+    nodes[0].forEach(function(n,j){n.setAttribute("fill",col(xin[j]));n.setAttribute("fill-opacity",Math.min(.55,.08+Math.abs(xin[j])*.5).toFixed(2));txt[0][j].textContent=xin[j].toFixed(2)});
+    for(var l=0;l<=L;l++){
+      var a=f.A[l][samp];
+      nodes[l+1].forEach(function(n,j){var v=a[j],vis=(l+1)<=rev;n.setAttribute("fill",col(v));n.setAttribute("fill-opacity",vis?Math.min(.55,.08+Math.abs(v)*.5).toFixed(2):"0");n.setAttribute("stroke-opacity",vis?".4":".15");txt[l+1][j].textContent=vis?v.toFixed(2):"·"});
+    }
+    /* hist, strip */
+    for(l=0;l<L;l++){
+      var st=f.st[l],s0=f0.st[l],x0=CX[l]-60,w=120,hy=292,K=130;
+      st.h.forEach(function(p,b){var h=Math.min(64,p*K);bars[l][b].setAttribute("y",hy-h);bars[l][b].setAttribute("height",Math.max(0.5,h));bars[l][b].setAttribute("fill",c);bars[l][b].setAttribute("fill-opacity",(l+1<=rev)?".7":".1")});
+      var d="";s0.h.forEach(function(p,b){var h=Math.min(64,p*K),xa=x0+b*w/BINS,xb=x0+(b+1)*w/BINS;d+=(b?"L":"M")+xa.toFixed(1)+","+(hy-h).toFixed(1)+" L"+xb.toFixed(1)+","+(hy-h).toFixed(1)+" "});
+      ghosts[l].setAttribute("d",d);
+      stD[l].textContent="μ "+st.mu.toFixed(2)+"  σ "+st.sd.toFixed(2);
+      var sy0=345,sh=48,n=S.frames.length;
+      function fyv(v){return sy0+sh/2-Math.max(-4,Math.min(4,v))/4*(sh/2)}
+      function fxv(i){return x0+i/(n-1)*w}
+      var up="",dn="",md="";
+      S.frames.forEach(function(F,i){var q=F.st[l];up+=(i?"L":"M")+fxv(i).toFixed(1)+","+fyv(q.p85).toFixed(1)+" ";md+=(i?"L":"M")+fxv(i).toFixed(1)+","+fyv(q.p50).toFixed(1)+" "});
+      for(var i=n-1;i>=0;i--){var q=S.frames[i].st[l];dn+="L"+fxv(i).toFixed(1)+","+fyv(q.p15).toFixed(1)+" "}
+      bands[l].setAttribute("d",up+dn+"Z");bands[l].setAttribute("fill",c);
+      meds[l].setAttribute("d",md);meds[l].setAttribute("stroke",c);
+      curs[l].setAttribute("x1",fxv(fi));curs[l].setAttribute("x2",fxv(fi));
+      var pst=fp.st[l];
+      stT[l].textContent="step change "+(Math.abs(st.mu-pst.mu)+Math.abs(st.sd-pst.sd)).toFixed(2);
+    }
+    $("#icsFwd").textContent=(rev>=5?"all layers computed":(rev===0?"only the input is known so far":"computed up to "+(rev<=4?"layer "+rev:"output")))+"  ·  weights are frozen during this step  ·  "+(mode==="plain"?"a = tanh(W·a_prev + b)":"a = tanh(γ·BN(W·a_prev) + β)")+(mode==="noise"?" then random scale/offset":"");$("#icsTv").textContent=f.t;$("#icsT").value=fi;$("#icsSv").textContent=samp+1;
+    $("#icsLoss").textContent=f.loss.toFixed(2);$("#icsAcc").textContent=Math.round(f.acc*100)+"%";
+    $("#icsCap").innerHTML={
+      plain:'<span class="tag c-IS15">IS15 · §1</span>No BN: nothing pins a layer\'s input. As earlier weights change, its mean and spread wander, and the band in the strip below moves with them.',
+      bn:'<span class="tag c-IS15">IS15 · §3</span>With BN: each layer\'s tanh input is re-standardized every step, so it sits near μ = β, σ = γ and only moves as γ and β themselves are learned. Eval loss can bounce because each step uses the statistics of its own mini-batch.',
+      noise:'<span class="tag c-ST18">ST18 · §2.1</span>My re-implementation of the idea: after BN, every step multiplies by a random scale and adds a random offset. The distributions jump around yet the net still learns, though more slowly than plain BN here. ST18 report it barely hurts; their protocol differs from mine.'
+    }[mode];
+  }
+  function setMode(m){mode=m;[["plain","#icsPlain"],["bn","#icsBN"],["noise","#icsNoise"]].forEach(function(a){$(a[1]).setAttribute("aria-pressed",String(a[0]===m))});draw()}
+  $("#icsPlain").onclick=function(){setMode("plain")};$("#icsBN").onclick=function(){setMode("bn")};$("#icsNoise").onclick=function(){setMode("noise")};
+  $("#icsT").oninput=function(){fi=parseInt(this.value,10);draw()};
+  $("#icsS").oninput=function(){samp=parseInt(this.value,10)-1;draw()};
+  var last=0,acc=0;
+  function loop(now){if(!playing)return;acc+=now-last;last=now;var ms=(RM?400:110)/parseFloat($("#icsSpeed").value);while(acc>=ms){acc-=ms;fi=(fi+1)%SIMS[mode].frames.length}draw();requestAnimationFrame(loop)}
+  function stopFwd(){if(fwdTimer){clearTimeout(fwdTimer);fwdTimer=null}}
+  $("#icsFwdGo").onclick=function(){stopFwd();playing=false;$("#icsPlay").textContent="Play";rev=0;draw();(function nxt(){fwdTimer=setTimeout(function(){rev++;draw();if(rev<5)nxt();else fwdTimer=null},(RM?900:1300)/parseFloat($("#icsSpeed").value))})()};
+  $("#icsFwdNext").onclick=function(){stopFwd();playing=false;$("#icsPlay").textContent="Play";rev=rev>=5?0:rev+1;draw()};
+  $("#icsFwdAll").onclick=function(){stopFwd();rev=5;draw()};
+  $("#icsPlay").onclick=function(){stopFwd();rev=5;playing=!playing;this.textContent=playing?"Pause":"Play";if(playing){last=performance.now();acc=0;requestAnimationFrame(loop)}};
+  build();draw();
+})();
+
+/* ---------- 2. Forward ---------- */
+(function(){
+  var S={m:6,g:1,b:0,eps:1e-5,stage:0},svg=$("#fSvg"),dots=[],meanLine,stdBar,meanTxt;
+  var lo=-4,hi=8;function px(v){return 30+(v-lo)/(hi-lo)*580}
+  var NAMES=["1 · raw x","2 · subtract μ","3 · divide by s","4 · γ·x̂ + β"];
+  var CAP=[
+   '<span class="tag c-IS15">IS15 · §3</span>Raw pre-activations for one feature across the batch. Mean and spread are whatever the previous layer produced.',
+   '<span class="tag c-IS15">IS15 · Alg. 1</span>Subtract the batch mean μ_B. The cloud is now centered on 0.',
+   '<span class="tag c-IS15">IS15 · Alg. 1</span>Divide by s = √(σ²+ε). Std becomes ≈ 1 (slightly under, because of ε). This is x̂.',
+   '<span class="tag c-IS15">IS15 · §3</span>Scale by γ and shift by β. With γ = s and β = μ the points land back where they started: the identity is recoverable.'];
+  var st=$("#fStages");
+  NAMES.forEach(function(n,i){var b=document.createElement("button");b.className="b";b.textContent=n;b.onclick=function(){go(i)};st.appendChild(b)});
+  function xs(){return BASE.slice(0,S.m)}
+  function vals(stage){
+    var d=xs(),q=stats(d,S.eps);
+    return d.map(function(x){var c=x-q.mu,h=c/q.s;return stage===0?x:stage===1?c:stage===2?h:S.g*h+S.b});
+  }
+  function build(){
+    while(svg.firstChild)svg.removeChild(svg.firstChild);dots=[];
+    el("line",{x1:30,x2:610,y1:100,y2:100,stroke:"var(--line)","stroke-width":2},svg);
+    for(var v=-4;v<=8;v+=2){el("line",{x1:px(v),x2:px(v),y1:96,y2:104,stroke:"var(--muted)"},svg);var t=el("text",{x:px(v),y:118,"text-anchor":"middle"},svg);t.textContent=v}
+    el("line",{x1:px(0),x2:px(0),y1:20,y2:100,stroke:"var(--line)","stroke-dasharray":"3 4"},svg);
+    meanLine=el("line",{y1:24,y2:100,stroke:"var(--bn)","stroke-width":2,"stroke-dasharray":"4 3"},svg);
+    meanTxt=el("text",{y:18,"text-anchor":"middle",fill:"var(--bn)"},svg);meanTxt.style.fill="var(--bn)";meanTxt.textContent="mean";
+    stdBar=el("rect",{y:132,height:7,rx:3,fill:"var(--bn)","fill-opacity":".35"},svg);
+    var sl=el("text",{y:156},svg);sl.textContent="blue bar = mean ± 1 std";sl.setAttribute("x",30);
+    for(var i=0;i<S.m;i++){
+      var g=el("g",{"class":"dot"},svg);
+      el("circle",{r:9,fill:"var(--bn)","fill-opacity":".85"},g);
+      var tx=el("text",{y:3.5,"text-anchor":"middle"},g);tx.style.fill="#fff";tx.style.fontWeight="600";tx.textContent=i+1;
+      dots.push(g);
+    }
+  }
+  function place(){
+    var v=vals(S.stage),m=v.length,mean=0,i;for(i=0;i<m;i++)mean+=v[i];mean/=m;
+    var sd=0;for(i=0;i<m;i++)sd+=(v[i]-mean)*(v[i]-mean);sd=Math.sqrt(sd/m);
+    v.forEach(function(val,i){var cx=px(Math.max(lo,Math.min(hi,val)));dots[i].style.transform="translate("+cx+"px,"+(46+(i%4)*12)+"px)"});
+    meanLine.setAttribute("x1",px(mean));meanLine.setAttribute("x2",px(mean));meanTxt.setAttribute("x",px(mean));
+    stdBar.setAttribute("x",px(mean-sd));stdBar.setAttribute("width",Math.max(1,px(mean+sd)-px(mean-sd)));
+    $("#fCur").textContent=fx(mean)+" / "+fx(sd);
+    var q=stats(xs(),S.eps);
+    $("#fMu").textContent=fx(q.mu);$("#fVar").textContent=fx(q.v);$("#fS").textContent=fx(q.s);
+    $("#fCap").innerHTML=CAP[S.stage];
+    Array.prototype.forEach.call(st.children,function(b,j){b.setAttribute("aria-pressed",String(j===S.stage))});
+    $("#fGv").textContent=S.g.toFixed(2);$("#fBv").textContent=S.b.toFixed(2);$("#fMv").textContent=S.m;
+  }
+  function go(i){S.stage=Math.max(0,Math.min(3,i));place()}
+  $("#fPrev").onclick=function(){go(S.stage-1)};$("#fNext").onclick=function(){go(S.stage+1)};
+  $("#fPlay").onclick=function(){go(0);var i=0,h=setInterval(function(){i++;go(i);if(i>=3)clearInterval(h)},1300)};
+  $("#fM").oninput=function(){S.m=parseInt(this.value,10);build();place()};
+  $("#fG").oninput=function(){S.g=parseFloat(this.value);go(3)};
+  $("#fB").oninput=function(){S.b=parseFloat(this.value);go(3)};
+  $("#fUndo").onclick=function(){var q=stats(xs(),S.eps);S.g=q.s;S.b=q.mu;$("#fG").value=q.s;$("#fB").value=q.mu;go(3)};
+  build();place();
+})();
+
+/* ---------- 3. Backward (shared step) ---------- */
+(function(){
+  var S={bn:true,m:6,g:1,b:0,eps:1e-5,x:BASE.slice(),drag:-1,start:null,last:null,sel:[2,2]};
+  var XL=-1,XH=7,YL=-4,YH=7;
+  var cart=$("#cSvg"),nl=$("#nlSvg"),hm=$("#jSvg");
+  function xs(){return S.x.slice(0,S.m)}
+  function out(arr){if(!S.bn)return arr.slice();var q=stats(arr,S.eps);return arr.map(function(v){return S.g*(v-q.mu)/q.s+S.b})}
+  function jac(arr){
+    var m=arr.length,q=stats(arr,S.eps),J=[],i,j,xh=arr.map(function(v){return(v-q.mu)/q.s});
+    for(i=0;i<m;i++){J.push([]);for(j=0;j<m;j++)J[i].push(S.bn?S.g/q.s*((i===j?1:0)-1/m-xh[i]*xh[j]/m):(i===j?1:0))}
+    return{J:J,q:q,xh:xh};
+  }
+  /* cartesian geometry */
+  function cx(v){return 40+(v-XL)/(XH-XL)*285}
+  function cy(v){return 285-(v-YL)/(YH-YL)*270}
+  /* number-line geometry */
+  var TY=70,BY=250;
+  function nx(v){return 20+(v-XL)/(XH-XL)*300}
+  function ny(v){return 20+(v-YL)/(YH-YL)*300}
+  var cDyn,nDyn,cLine,cGhost;
+  function buildStatic(){
+    [cart,nl].forEach(function(s){while(s.firstChild)s.removeChild(s.firstChild)});
+    var defs=el("defs",{},cart),cp=el("clipPath",{id:"cClip"},defs);el("rect",{x:40,y:15,width:285,height:270},cp);
+    for(var v=XL;v<=XH;v++){el("line",{x1:cx(v),x2:cx(v),y1:15,y2:285,stroke:"var(--line)","stroke-width":v===0?1.4:.6},cart);if(v%2===0){var t=el("text",{x:cx(v),y:299,"text-anchor":"middle"},cart);t.textContent=v}}
+    for(v=YL;v<=YH;v++){el("line",{x1:40,x2:325,y1:cy(v),y2:cy(v),stroke:"var(--line)","stroke-width":v===0?1.4:.6},cart);if(v%2===0){var t2=el("text",{x:34,y:cy(v)+4,"text-anchor":"end"},cart);t2.textContent=v}}
+    var xl=el("text",{x:182,y:315,"text-anchor":"middle"},cart);xl.textContent="input x";
+    var yl=el("text",{x:12,y:150,"text-anchor":"middle",transform:"rotate(-90 12 150)"},cart);yl.textContent="output y";
+    el("line",{x1:cx(XL),y1:cy(XL),x2:cx(XH),y2:cy(XH),stroke:"var(--muted)","stroke-dasharray":"4 4","clip-path":"url(#cClip)"},cart);
+    var il=el("text",{x:cx(5.6),y:cy(6.3)},cart);il.textContent="y = x";
+    cGhost=el("line",{stroke:"var(--bn)","stroke-opacity":".3","stroke-width":2,"stroke-dasharray":"3 3","clip-path":"url(#cClip)"},cart);
+    cLine=el("line",{stroke:"var(--bn)","stroke-width":2.5,"clip-path":"url(#cClip)"},cart);
+    cDyn=el("g",{},cart);
+    /* number lines */
+    [[TY,"inputs x",nx,XL,XH],[BY,"outputs y",ny,YL,YH]].forEach(function(a){
+      el("line",{x1:20,x2:320,y1:a[0],y2:a[0],stroke:"var(--muted)","stroke-width":1.4},nl);
+      for(var v=a[3];v<=a[4];v++){el("line",{x1:a[2](v),x2:a[2](v),y1:a[0]-4,y2:a[0]+4,stroke:"var(--muted)"},nl);if(v%2===0){var t=el("text",{x:a[2](v),y:a[0]+(a[0]===TY?-10:18),"text-anchor":"middle"},nl);t.textContent=v}}
+      var lb=el("text",{x:20,y:a[0]+(a[0]===TY?-28:36)},nl);lb.textContent=a[1];lb.style.fontWeight="600";
+    });
+    nDyn=el("g",{},nl);
+  }
+  function pointerVal(svg,e,pane){
+    var pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;var p=pt.matrixTransform(svg.getScreenCTM().inverse());
+    var v=pane==="c"?XL+(p.x-40)/285*(XH-XL):XL+(p.x-20)/300*(XH-XL);
+    return Math.max(XL+.1,Math.min(XH-.1,v));
+  }
+  function startDrag(i,svg,e){e.preventDefault();S.drag=i;S.start=xs();S.sel=[S.sel[0],i];try{svg.setPointerCapture(e.pointerId)}catch(_){}render()}
+  [[cart,"c"],[nl,"n"]].forEach(function(a){
+    a[0].addEventListener("pointermove",function(e){if(S.drag<0)return;S.x[S.drag]=pointerVal(a[0],e,a[1]);render()});
+    function end(){if(S.drag<0)return;S.last={i:S.drag,start:S.start,startY:null};S.drag=-1;render()}
+    a[0].addEventListener("pointerup",end);a[0].addEventListener("pointercancel",end);
+  });
+  function dot(parent,x,y,i,active,drag,r){
+    var g=el("g",{},parent);if(drag)g.style.cursor="grab";
+    el("circle",{cx:x,cy:y,r:r,fill:"var(--bn)","fill-opacity":active?"1":".85",stroke:active?"var(--fg)":"none","stroke-width":2.5},g);
+    var t=el("text",{x:x,y:y+3.5,"text-anchor":"middle"},g);t.style.fill="#fff";t.style.fontWeight="600";t.textContent=i+1;
+    if(drag)el("circle",{cx:x,cy:y,r:r+8,fill:"transparent"},g);
+    return g;
+  }
+  function render(){
+    var arr=xs(),ys=out(arr),q=stats(arr,S.eps),m=arr.length,i;
+    var ref=S.drag>=0?S.start:(S.last?S.last.start:null),hot=S.drag>=0?S.drag:(S.last?S.last.i:-1);
+    var oldX=null,oldY=null;
+    if(ref){oldX=ref;oldY=(function(){var keep=S.x;S.x=ref.concat(S.x.slice(ref.length));var r=out(ref);S.x=keep;return r})()}
+    /* line */
+    function lineFor(a){if(!S.bn)return[XL,XL,XH,XH];var qq=stats(a,S.eps),k=S.g/qq.s;return[XL,k*(XL-qq.mu)+S.b,XH,k*(XH-qq.mu)+S.b]}
+    var L=lineFor(arr);cLine.setAttribute("x1",cx(L[0]));cLine.setAttribute("y1",cy(L[1]));cLine.setAttribute("x2",cx(L[2]));cLine.setAttribute("y2",cy(L[3]));
+    cLine.setAttribute("stroke",S.bn?"var(--bn)":"var(--nobn)");
+    if(ref&&S.bn){var G=lineFor(oldX);cGhost.setAttribute("x1",cx(G[0]));cGhost.setAttribute("y1",cy(G[1]));cGhost.setAttribute("x2",cx(G[2]));cGhost.setAttribute("y2",cy(G[3]));cGhost.style.display=""}else cGhost.style.display="none";
+    while(cDyn.firstChild)cDyn.removeChild(cDyn.firstChild);
+    while(nDyn.firstChild)nDyn.removeChild(nDyn.firstChild);
+    if(S.bn){
+      el("line",{x1:cx(q.mu),x2:cx(q.mu),y1:15,y2:285,stroke:"var(--bn)","stroke-opacity":".5","stroke-dasharray":"2 3"},cDyn);
+      var mt=el("text",{x:cx(q.mu)+4,y:27},cDyn);mt.textContent="μ";mt.style.fill="var(--bn)";
+      el("line",{x1:nx(q.mu),x2:nx(q.mu),y1:TY-14,y2:TY+14,stroke:"var(--bn)","stroke-width":2},nDyn);
+      var mt2=el("text",{x:nx(q.mu)+4,y:TY+26},nDyn);mt2.textContent="μ";mt2.style.fill="var(--bn)";
+    }
+    /* ghosts and trails */
+    if(ref){
+      for(i=0;i<m;i++){
+        if(Math.abs(oldY[i]-ys[i])>1e-6){
+          el("line",{x1:cx(arr[i]),x2:cx(arr[i]),y1:cy(oldY[i]),y2:cy(ys[i]),stroke:"var(--muted)","stroke-dasharray":"2 2"},cDyn);
+          el("circle",{cx:cx(oldX[i]),cy:cy(oldY[i]),r:6,fill:"none",stroke:"var(--muted)"},cDyn);
+          el("circle",{cx:ny(oldY[i]),cy:BY,r:5,fill:"none",stroke:"var(--muted)"},nDyn);
+          el("line",{x1:ny(oldY[i]),x2:ny(ys[i]),y1:BY+14,y2:BY+14,stroke:i===hot?"var(--fg)":"var(--nobn)","stroke-width":2},nDyn);
+        }
+      }
+      if(hot>=0)el("circle",{cx:nx(oldX[hot]),cy:TY,r:5,fill:"none",stroke:"var(--muted)"},nDyn);
+    }
+    for(i=0;i<m;i++){
+      el("line",{x1:nx(arr[i]),y1:TY,x2:ny(ys[i]),y2:BY,stroke:i===hot?"var(--fg)":"var(--bn)","stroke-opacity":i===hot?".8":".35","stroke-width":i===hot?2:1.4},nDyn);
+    }
+    for(i=0;i<m;i++){
+      (function(i){
+        var g1=dot(cDyn,cx(arr[i]),cy(ys[i]),i,i===hot,true,9);
+        g1.addEventListener("pointerdown",function(e){startDrag(i,cart,e)});
+        var g2=dot(nDyn,nx(arr[i]),TY,i,i===hot,true,9);
+        g2.addEventListener("pointerdown",function(e){startDrag(i,nl,e)});
+        dot(nDyn,ny(ys[i]),BY,i,i===hot,false,8);
+      })(i);
+    }
+    /* readouts */
+    $("#cMu").textContent=fx(q.mu);$("#cS").textContent=fx(q.s);$("#cSl").textContent=S.bn?fx(S.g/q.s):"1 (identity)";
+    $("#cMv").textContent=m;$("#cGv").textContent=S.g.toFixed(2);$("#cBv").textContent=S.b.toFixed(2);
+    if(ref&&hot>=0){
+      var dx=arr[hot]-oldX[hot],own=ys[hot]-oldY[hot],others=[];for(i=0;i<m;i++)if(i!==hot)others.push(ys[i]-oldY[i]);
+      var lo=Math.min.apply(null,others),hi=Math.max.apply(null,others);
+      $("#cMove").innerHTML=Math.abs(dx)<1e-9?"Drag a point left or right in either view.":
+        "x"+(hot+1)+" moved by "+(dx>=0?"+":"")+dx.toFixed(2)+". Its own output moved "+(own>=0?"+":"")+own.toFixed(2)+". "+
+        (S.bn?"The other "+(m-1)+" outputs moved between "+lo.toFixed(2)+" and "+hi.toFixed(2)+", without being touched.":"The other "+(m-1)+" outputs did not move.");
+    }else $("#cMove").textContent="Drag a point left or right in either view. Hollow circles will mark where things were before the drag.";
+    $("#cCap").innerHTML=S.bn?
+      '<span class="tag c-IS15">IS15 · Alg. 1</span>With BN, every sample lands on one straight line, y = (γ/s)(x − μ) + β. The batch decides where that line sits: drag one input and μ and s change, so the line tilts and slides and every other output moves with it.':
+      'Without BN this layer is just the identity: every sample sits on y = x, and moving one input moves only its own output.';
+    ["#cNo","#jNo"].forEach(function(id){$(id).setAttribute("aria-pressed",String(!S.bn))});
+    ["#cBn","#jBn"].forEach(function(id){$(id).setAttribute("aria-pressed",String(S.bn))});
+    $("#jCardNo").hidden=S.bn;$("#jCardBn").hidden=!S.bn;
+    renderHM(arr);fitText();
+  }
+  function renderHM(arr){
+    while(hm.firstChild)hm.removeChild(hm.firstChild);
+    var R=jac(arr),J=R.J,m=arr.length,ys=out(arr),i,j,mx=1e-9;
+    for(i=0;i<m;i++)for(j=0;j<m;j++)mx=Math.max(mx,Math.abs(J[i][j]));
+    var cs=Math.min(46,300/m),left=96,top=64,gw=m*cs,W=left+gw+60,Hh=top+gw+64;
+    hm.setAttribute("viewBox","0 0 "+W+" "+Hh);
+    var defs=el("defs",{},hm),lg=el("linearGradient",{id:"jGrad",x1:"0",x2:"1",y1:"0",y2:"0"},defs);
+    [["0%","var(--nobn)"],["50%","var(--soft)"],["100%","var(--bn)"]].forEach(function(s){var st=el("stop",{offset:s[0]},lg);st.style.stopColor=s[1]});
+    var tx=el("text",{x:left+gw/2,y:14,"text-anchor":"middle"},hm);tx.textContent="BN input xⱼ of observation j";tx.style.fontWeight="600";tx.style.fill="var(--fg)";
+    var ty=el("text",{x:12,y:top+gw/2,"text-anchor":"middle",transform:"rotate(-90 12 "+(top+gw/2)+")"},hm);ty.textContent="BN output yᵢ of observation i";ty.style.fontWeight="600";ty.style.fill="var(--fg)";
+    for(j=0;j<m;j++){
+      var c1=el("text",{x:left+j*cs+cs/2,y:top-24,"text-anchor":"middle"},hm);c1.textContent="obs "+(j+1);c1.style.fill="var(--fg)";
+      var c2=el("text",{x:left+j*cs+cs/2,y:top-10,"text-anchor":"middle"},hm);c2.textContent="x="+arr[j].toFixed(1);c2.style.fontSize="9px";
+    }
+    var sh=el("text",{x:left+gw+30,y:top-10,"text-anchor":"middle"},hm);sh.textContent="row Σ";
+    for(i=0;i<m;i++){
+      var my=top+i*cs+cs/2;
+      var r1=el("text",{x:left-8,y:my-1,"text-anchor":"end"},hm);r1.textContent="obs "+(i+1);r1.style.fill="var(--fg)";
+      var r2=el("text",{x:left-8,y:my+10,"text-anchor":"end"},hm);r2.textContent="y="+ys[i].toFixed(2);r2.style.fontSize="9px";
+      for(j=0;j<m;j++){
+        (function(i,j){
+          var v=J[i][j],zero=Math.abs(v)<1e-12;
+          var r=el("rect",{x:left+j*cs+1,y:top+i*cs+1,width:cs-2,height:cs-2,rx:4,fill:zero?"var(--soft)":(v>0?"var(--bn)":"var(--nobn)"),"fill-opacity":zero?"1":(0.12+0.78*Math.abs(v)/mx).toFixed(2)},hm);
+          r.style.cursor="pointer";
+          var sel=S.sel[0]===i&&S.sel[1]===j;
+          if(sel){r.setAttribute("stroke","var(--fg)");r.setAttribute("stroke-width","2.5")}
+          else if(i===j){r.setAttribute("stroke","var(--fg)");r.setAttribute("stroke-opacity",".35");r.setAttribute("stroke-dasharray","3 2")}
+          if(S.drag>=0&&j===S.drag&&!sel){r.setAttribute("stroke","var(--fg)");r.setAttribute("stroke-opacity",".6");r.removeAttribute("stroke-dasharray")}
+          var t=el("text",{x:left+j*cs+cs/2,y:top+i*cs+cs/2+3.5,"text-anchor":"middle"},hm);t.style.fill="var(--fg)";t.style.fontSize=(cs<36?"8.5px":"10px");t.style.pointerEvents="none";
+          t.textContent=zero?"0":(Math.abs(v)<5e-3?v.toFixed(3):v.toFixed(2));
+          r.addEventListener("click",function(){S.sel=[i,j];renderHM(xs());fitText()});
+        })(i,j);
+      }
+      var rsum=0;for(j=0;j<m;j++)rsum+=J[i][j];
+      var st=el("text",{x:left+gw+30,y:my+4,"text-anchor":"middle"},hm);st.textContent=Math.abs(rsum)<5e-4?"0":rsum.toFixed(2);
+    }
+    var cl=el("text",{x:left-8,y:top+gw+18,"text-anchor":"end"},hm);cl.textContent="col Σ";
+    for(j=0;j<m;j++){var cs2=0;for(i=0;i<m;i++)cs2+=J[i][j];var ct=el("text",{x:left+j*cs+cs/2,y:top+gw+18,"text-anchor":"middle"},hm);ct.textContent=Math.abs(cs2)<5e-4?"0":cs2.toFixed(2)}
+    /* colour scale */
+    var ly=top+gw+34;
+    el("rect",{x:left,y:ly,width:gw,height:8,rx:4,fill:"url(#jGrad)"},hm);
+    var l1=el("text",{x:left,y:ly+22,"text-anchor":"start"},hm);l1.textContent="−"+mx.toFixed(2);
+    var l2=el("text",{x:left+gw/2,y:ly+22,"text-anchor":"middle"},hm);l2.textContent="0";
+    var l3=el("text",{x:left+gw,y:ly+22,"text-anchor":"end"},hm);l3.textContent="+"+mx.toFixed(2);
+    var l4=el("text",{x:left-8,y:ly+8,"text-anchor":"end"},hm);l4.textContent="scale";
+    /* detail */
+    var a=Math.min(S.sel[0],m-1),b=Math.min(S.sel[1],m-1);S.sel=[a,b];
+    var h=1e-4,p=arr.slice(),n=arr.slice();p[b]+=h;n[b]-=h;var fd=(out(p)[a]-out(n)[a])/(2*h);
+    var head='Row '+(a+1)+', column '+(b+1)+': how much observation '+(a+1)+'’s output y'+(a+1)+' moves per unit move of observation '+(b+1)+'’s input x'+(b+1);
+    var html;
+    if(!S.bn){
+      html='<tr><th colspan="2">'+head+'</th></tr><tr><td>Without BN, yᵢ = xᵢ, so the matrix is the identity: 1 on the diagonal, 0 everywhere else.</td><td class="mono">'+J[a][b].toFixed(4)+'</td></tr>';
+    }else{
+      var xh=R.xh,k=S.g/R.q.s,d=(a===b?1:0),t2=-1/m,t3=-xh[a]*xh[b]/m;
+      html='<tr><th>'+head+'</th><th>value</th></tr>'+
+        '<tr><td>own path, δᵢⱼ (1 only on the diagonal)</td><td class="mono">'+d.toFixed(4)+'</td></tr>'+
+        '<tr><td>through the mean μ: −1/m</td><td class="mono">'+t2.toFixed(4)+'</td></tr>'+
+        '<tr><td>through the variance σ²: −x̂ᵢ·x̂ⱼ/m</td><td class="mono">'+t3.toFixed(4)+'</td></tr>'+
+        '<tr><td>times γ/s</td><td class="mono">× '+k.toFixed(4)+'</td></tr>'+
+        '<tr><td><b>Jᵢⱼ</b></td><td class="mono"><b>'+J[a][b].toFixed(4)+'</b></td></tr>'+
+        '<tr><td>finite-difference check (move x'+(b+1)+' by ±0.0001, measure y'+(a+1)+')</td><td class="mono">'+fd.toFixed(4)+'</td></tr>';
+    }
+    $("#jDet").innerHTML=html;
+  }
+  function fitText(){
+    var ex=document.querySelector(".jexp");if(!ex)return;
+    ex.style.fontSize="";
+    if(window.innerWidth<760)return;
+    var target=hm.getBoundingClientRect().height;if(!target)return;
+    var lo=11,hi=17;
+    for(var k=0;k<9;k++){var f=(lo+hi)/2;ex.style.fontSize=f+"px";if(ex.getBoundingClientRect().height>target)hi=f;else lo=f}
+    ex.style.fontSize=(Math.floor(lo*100)/100-0.02)+"px";
+  }
+  window.addEventListener("resize",fitText);
+  function setBN(v){S.bn=v;S.last=null;render()}
+  $("#cNo").onclick=$("#jNo").onclick=function(){setBN(false)};
+  $("#cBn").onclick=$("#jBn").onclick=function(){setBN(true)};
+  $("#cM").oninput=function(){S.m=parseInt(this.value,10);S.last=null;render()};
+  $("#cG").oninput=function(){S.g=parseFloat(this.value);S.last=null;render()};
+  $("#cB").oninput=function(){S.b=parseFloat(this.value);S.last=null;render()};
+  $("#cReset").onclick=function(){S.x=BASE.slice();S.last=null;render()};
+  buildStatic();render();
+})();
+})();
+</script>
+</body>
+</html>

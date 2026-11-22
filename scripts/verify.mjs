@@ -17,8 +17,8 @@ if (!m) {
 const { EXS } = new Function(`${m[1]}\nreturn { EXS };`)();
 
 let failures = 0;
-if (EXS.length !== 10) {
-  console.error(`FAIL: expected 10 exercises, found ${EXS.length}`);
+if (EXS.length !== 11) {
+  console.error(`FAIL: expected 11 exercises, found ${EXS.length}`);
   failures++;
 }
 EXS.forEach((ex, xi) => {

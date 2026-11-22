@@ -3,85 +3,93 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Backward pass practice — 10 exercises</title>
-<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;600;700&display=swap" rel="stylesheet">
+<title>Backward pass practice — 11 exercises</title>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,700;1,400;1,700&family=Roboto:wght@500&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#fbfbfd;--ink:#14213d;--mut:#5b6478;--line:#cfd4e1;--acc:#14275a;--bad:#a4281f;--ok:#1f7a5c;--card:#fff;--wash:#eef0f6;--fwd:#1f7a73}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1322;--ink:#e8ebf5;--mut:#9aa3ba;--line:#2a3350;--acc:#9db4ff;--bad:#ff8a80;--ok:#6fd6ae;--card:#151c30;--wash:#1b2440;--fwd:#6fd0c6}}
-:root[data-theme="dark"]{--bg:#0e1322;--ink:#e8ebf5;--mut:#9aa3ba;--line:#2a3350;--acc:#9db4ff;--bad:#ff8a80;--ok:#6fd6ae;--card:#151c30;--wash:#1b2440;--fwd:#6fd0c6}
+/* Look and feel follows the CIS 5190 deep-dive deck: white slides, navy titles,
+   dark-red accents, grey panels with a red side rule, gold highlight boxes. */
+:root{--bg:#fff;--ink:#1a1a1a;--mut:#595959;--line:#dce3ee;--acc:#011f5b;--bad:#990000;--ok:#1f7a5c;--card:#fff;--wash:#f7f7f7;--fwd:#011f5b;--sky:#82afd3;--gold:#fcf3cc;--goldline:#f2c100;--sans:Roboto,Arial,sans-serif;color-scheme:light}
 :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *,*::before,*::after{box-sizing:inherit}
-body{margin:0;background:var(--bg);color:var(--ink);font:19px/1.5 "EB Garamond",Georgia,serif;font-variant-numeric:tabular-nums}
-main{max-width:760px;margin:0 auto;padding:28px 18px 60px}
-h1{font-size:2rem;line-height:1.15;margin:0 0 6px;color:var(--acc)}
-h2{font-size:1.25rem;margin:0;color:var(--acc)}
-h3{font-size:1rem;margin:14px 0 6px;color:var(--mut);font-weight:600}
-.lede{color:var(--mut);margin:0 0 18px}
-.eq{font-size:1.35rem;background:var(--wash);padding:10px 14px;border-radius:6px;margin:0 0 10px;overflow-x:auto;white-space:nowrap}
-.vals{margin:0 0 22px;color:var(--fwd);font-weight:600}
-.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 18px 16px;margin:0 0 14px}
+body{margin:0;background:var(--bg);color:var(--ink);font:20px/1.25 "EB Garamond",Georgia,serif;font-variant-numeric:tabular-nums}
+main{max-width:860px;margin:0 auto;padding:28px 18px 60px}
+h1{font-size:2.5rem;font-weight:700;line-height:1.1;margin:0 0 10px;color:var(--acc)}
+h2{font-size:1.35rem;font-weight:700;line-height:1.15;margin:0;color:var(--acc)}
+h3{font-size:1rem;margin:14px 0 6px;color:var(--bad);font-weight:700}
+.lede{color:var(--ink);margin:0 0 18px;font-size:1.1rem}
+.eq{font-size:1.4rem;background:var(--gold);border:2px solid var(--goldline);padding:12px 18px;margin:0 0 10px;overflow-x:auto;white-space:nowrap;text-align:center}
+.vals{margin:0 0 22px;color:var(--acc);font-weight:700}
+.card{background:var(--wash);border:2px solid var(--line);border-left:10px solid var(--bad);padding:14px 20px 16px;margin:0 0 14px}
 .card[inert]{opacity:.45}
-.card.done{border-color:var(--ok)}
-.sub{margin:2px 0 0;color:var(--fwd)}
-.sub b{color:var(--ink)}
+.card.done{border-left-color:var(--ok)}
+.sub{margin:4px 0 0;color:var(--ink)}
+.sub b{color:var(--acc)}
 .row{display:flex;align-items:center;gap:10px;margin:6px 0}
 .row span{min-width:120px}
-small.tag{color:var(--mut);font-size:.72em;font-weight:400}
-input{width:84px;font:inherit;text-align:center;padding:3px 6px;border:1.5px solid var(--bad);border-radius:3px;background:var(--card);color:var(--ink)}
-input:focus-visible,button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
-input.bad{background:color-mix(in srgb,var(--bad) 14%,transparent)}
-input.ok{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,transparent)}
-button{font:inherit;font-weight:600;background:var(--acc);color:var(--bg);border:0;border-radius:4px;padding:4px 16px;cursor:pointer;margin-top:6px}
+small.tag{color:var(--mut);font:500 .62em var(--sans)}
+input{width:90px;font:inherit;text-align:center;padding:3px 6px;border:2px solid var(--sky);border-radius:0;background:#fff;color:var(--ink)}
+input:focus-visible,button:focus-visible{outline:2px solid var(--bad);outline-offset:2px}
+input.bad{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 10%,#fff)}
+input.ok{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,#fff)}
+button{font:inherit;font-weight:700;background:var(--acc);color:#fff;border:0;border-radius:0;padding:5px 18px;cursor:pointer;margin-top:6px}
+button:hover{background:#0a2f80}
 button.ghost{background:none;color:var(--mut);text-decoration:underline;font-weight:400;padding:4px 8px}
+button.ghost:hover{background:none;color:var(--acc)}
 .fb{margin:6px 0 0;min-height:1.2em}
 .fb.bad{color:var(--bad)}.fb.ok{color:var(--ok)}
-#sum{display:none;border:1.5px solid var(--ok);border-radius:8px;padding:14px 18px}
+#sum{display:none;background:var(--gold);border:2px solid var(--goldline);border-left:2px solid var(--goldline);padding:16px 22px}
 #sum.on{display:block}
-#sum .gi{font-size:1.15rem;margin:6px 0}
-#sum .note{color:var(--mut);margin:8px 0 0}
+#sum h2{font-size:1.5rem}
+#sum .gi{font-size:1.2rem;margin:8px 0}
+#sum .note{color:var(--ink);margin:8px 0 0}
 .top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:0 0 8px;min-height:34px}
 .top .ghost{margin:0}
-#where{color:var(--mut)}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+#where{color:var(--mut);font:500 .8rem var(--sans)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media(max-width:640px){.grid{grid-template-columns:1fr}}
-.excard{display:block;width:100%;text-align:left;font:inherit;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;color:var(--ink);cursor:pointer}
-.excard:hover{border-color:var(--acc)}
-.excard.done{border-color:var(--ok)}
-.excard .no{color:var(--mut);font-size:.9rem}
-.excard .nm{font-weight:700;font-size:1.05rem;margin:2px 0}
-.excard .eqs{font-size:1rem;margin:0 0 6px;color:var(--acc);white-space:nowrap;overflow-x:auto}
-.chip{display:inline-block;font-size:.72rem;border:1px solid var(--line);border-radius:99px;padding:0 8px;color:var(--mut);margin:0 4px 4px 0;white-space:nowrap}
+.excard{display:block;width:100%;text-align:left;font:inherit;font-weight:400;background:var(--wash);border:2px solid var(--line);border-left:10px solid var(--bad);border-radius:0;padding:12px 16px;color:var(--ink);cursor:pointer;margin:0}
+.excard:hover{background:var(--wash);border-color:var(--acc);border-left-color:var(--acc)}
+.excard.done{border-left-color:var(--ok)}
+.excard .no{color:var(--mut);font:500 .72rem var(--sans)}
+.excard .nm{font-weight:700;font-size:1.15rem;margin:2px 0;color:var(--acc)}
+.excard .eqs{font-size:1rem;margin:0 0 6px;color:var(--ink);white-space:nowrap;overflow-x:auto}
+.chip{display:inline-block;font:500 .66rem var(--sans);border:1px solid var(--sky);border-radius:0;padding:0 8px;color:var(--acc);margin:0 4px 4px 0;white-space:nowrap;background:#fff}
 .tick{color:var(--ok);font-weight:700}
-.prog{color:var(--mut);margin:0 0 16px}
-.graph{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px 8px;margin:0 0 18px}
-.graph .cap{color:var(--mut);font-size:.85rem;margin:0 0 6px}
-.gbox{fill:var(--wash);stroke:var(--line);stroke-width:1.2}
-.gbox.cur{stroke:var(--acc);stroke-width:2.2}
-.gbox.gd{stroke:var(--ok);stroke-width:2;fill:color-mix(in srgb,var(--ok) 12%,var(--card))}
-.glab{font:600 13px "EB Garamond",Georgia,serif;fill:var(--ink)}
-.gvar{font:italic 600 15px "EB Garamond",Georgia,serif;fill:var(--fwd)}
-.gterm{font:700 17px "EB Garamond",Georgia,serif;fill:var(--acc)}
-.gedge{stroke:var(--line);stroke-width:1.4;fill:none}
-.gedgelab{font:italic 600 13px "EB Garamond",Georgia,serif;fill:var(--fwd)}
-.gdot{fill:var(--fwd)}
+.prog{color:var(--mut);margin:0 0 16px;font:500 .8rem var(--sans)}
+.graph{overflow-x:auto;background:var(--wash);border:2px solid var(--sky);padding:10px 12px 8px;margin:0 0 18px}
+.graph svg{display:block;max-width:none}
+.graph .cap{color:var(--mut);font:500 .7rem var(--sans);margin:0 0 6px}
+.gbox{fill:#fff;stroke:var(--sky);stroke-width:1.6}
+.gbox.cur{stroke:var(--bad);stroke-width:3}
+.gbox.gd{stroke:var(--acc);stroke-width:2;fill:var(--acc)}
+.glab{font:700 13px "EB Garamond",Georgia,serif;fill:var(--ink)}
+.gbox.gd + .glab{fill:#fff}
+.gvar{font:italic 700 15px "EB Garamond",Georgia,serif;fill:var(--acc)}
+.gterm{font:700 17px "EB Garamond",Georgia,serif;fill:var(--bad)}
+.gedge{stroke:#9aa5b5;stroke-width:1.4;fill:none}
+.gedgelab{font:italic 700 13px "EB Garamond",Georgia,serif;fill:var(--acc)}
+.gdot{fill:var(--bad)}
 .nav{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:14px}
-.fc{border:1px solid var(--line);border-radius:6px;margin:10px 0;padding:10px 14px;cursor:pointer;background:var(--wash)}
-.fc:hover{border-color:var(--acc)}
-.fc:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.fc{border:2px solid var(--line);border-left:10px solid var(--bad);border-radius:0;margin:10px 0;padding:10px 16px;cursor:pointer;background:var(--wash)}
+.fc:hover{border-color:var(--acc);border-left-color:var(--acc)}
+.fc:focus-visible{outline:2px solid var(--bad);outline-offset:2px}
 .fc .fcq{white-space:pre-wrap}
-.fc .fca{white-space:pre-wrap;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);color:var(--fwd)}
+.fc .fca{white-space:pre-wrap;margin-top:10px;padding-top:10px;border-top:1px dashed var(--sky);color:var(--acc)}
 .fc .fca b{color:var(--ink)}
-.srctag{display:inline-block;font-size:.72rem;border:1px solid var(--line);border-radius:99px;padding:0 8px;color:var(--mut);margin:0 0 6px;background:var(--card)}
-.cnt{color:var(--mut);font-size:.85rem;font-weight:400}
+.srctag{display:inline-block;font:500 .66rem var(--sans);border:1px solid var(--sky);border-radius:0;padding:0 8px;color:var(--acc);margin:0 0 6px;background:#fff}
+.cnt{color:var(--mut);font:500 .75rem var(--sans)}
 .rall{margin:0;font-size:.85rem}
 .fclink{width:100%;margin-top:14px}
+.lede a,.top a{color:var(--acc)}
+.foot{margin:28px 0 0;font:500 .75rem var(--sans);color:var(--mut);text-align:right}
 </style>
 </head>
 <body>
 <main>
 <div class="top"><button class="ghost" id="home" hidden>← All exercises</button><span id="where"></span></div>
 <div id="view"></div>
+<p class="foot">CIS 5190 · Applied Machine Learning · Backward pass practice</p>
 </main>
 <noscript><p>This practice app needs JavaScript.</p></noscript>
 <script>
@@ -96,6 +104,8 @@ relu:'ReLU passes gradient 1 when its input is positive, 0 when it is negative.'
 recip:'The derivative of 1/t is −1/t².',
 half:'A constant multiplier slides straight into the derivative: d/dQ (Q/2) = ½.',
 bce:'For binary cross-entropy, ∂ℒ/∂p = −y/p + (1−y)/(1−p).',
+mean:'A mean divides by N, so every input gets local gradient 1/N.',
+sqrt:'The derivative of √t is 1/(2√t).',
 hinge:'max(0, q) routes gradient only when q > 0: local gradient 1 then, 0 otherwise.',
 up:'Upstream is ∇ℒ with respect to this node’s output: the downstream value handed back by the node to its right (an accumulated product, not one local gradient).',
 down:'Downstream = local × upstream.',
@@ -225,6 +235,41 @@ const EXS=[
  {t:'Add bias, point 2',g:'+',f:'ŷ₂ = u₂ + b',v:'4 + 0 = 4',o:'ŷ₂',U:1,y:'add',i:[['u₂',1,'Addition passes gradients straight through: +1.'],['b',1,'Addition passes gradients straight through: +1 — point 2’s share of b.']]},
  {t:'Multiply, point 1',g:'×',f:'u₁ = w·x₁',v:'(1)(2) = 2',o:'u₁',U:1,y:'mul',i:[['w',2,'Local gradient = the other factor = x₁ = 2. w is shared, so this is only the share flowing through point 1.'],['x₁',1,'Local gradient = the other factor = w = 1.']]},
  {t:'Multiply, point 2',g:'×',f:'u₂ = w·x₂',v:'(1)(4) = 4',o:'u₂',U:1,y:'mul',i:[['w',4,'Local gradient = the other factor = x₂ = 4 — point 2’s share of w.'],['x₂',1,'Local gradient = the other factor = w = 1.']]}
+]},
+
+{id:11,title:'Batch normalization',eq:'x̂ᵢ = (xᵢ − μ)/s,&nbsp; s = √(σ² + ε),&nbsp; yᵢ = γx̂ᵢ + β,&nbsp; ℒ = ½Σ(yᵢ − tᵢ)²',chips:['μ','s','γ β','batch'],
+ sub:'Statistics computed from the whole batch, so every sample’s gradient flows through all the others.',
+ vals:'x = (1, 4, 7), t = (0, 1, 1), γ = 2, β = 1, ε = 3 → μ = 4, σ² = 6, s = 3, x̂ = (−1, 0, 1), y = (−1, 1, 3), ℒ = 2.5',
+ note:'Each xᵢ reaches ℒ twice: directly through its own centring step, and indirectly through μ and σ², the cross-sample paths. The gradients sum to 0 across the batch: −2/9 − 2/9 + 4/9 = 0. They also match the one-line formula ∇xᵢ = γ/(m·s)·(m·gᵢ − Σgⱼ − x̂ᵢ·Σgⱼx̂ⱼ) with gᵢ = ∇yᵢℒ = (−1, 0, 2). The last term vanishes only as ε → 0: here ε = 3 is exaggerated to keep s a round number, so Σx̂ᵢ∇xᵢ = 2/3, not 0. Notation follows Ioffe & Szegedy: y is the BN output (exercises 2–10 use y for the target; here it is t).',
+ N:[
+ {t:'Halve — the loss',g:'½',f:'ℒ = ½·Q',v:'Q = 5 → ℒ = 2.5',o:'ℒ',U:1,y:'half',i:[['Q',0.5]]},
+ {t:'Add the squared errors',g:'+',f:'Q = e₁ + e₂ + e₃',v:'1 + 0 + 4 = 5',o:'Q',U:0.5,y:'add',i:[['e₁',1],['e₂',1],['e₃',1]]},
+ {t:'Square, sample 1',g:'²',f:'e₁ = r₁²',v:'r₁ = -1 → e₁ = 1',o:'e₁',U:0.5,y:'sq',i:[['r₁',-2]]},
+ {t:'Square, sample 2',g:'²',f:'e₂ = r₂²',v:'r₂ = 0 → e₂ = 0',o:'e₂',U:0.5,y:'sq',i:[['r₂',0]]},
+ {t:'Square, sample 3',g:'²',f:'e₃ = r₃²',v:'r₃ = 2 → e₃ = 4',o:'e₃',U:0.5,y:'sq',i:[['r₃',4]]},
+ {t:'Subtract target 1',g:'−',f:'r₁ = y₁ − t₁',v:'-1 − 0 = -1',o:'r₁',U:-1,y:'sub',i:[['y₁',1],['t₁',-1]]},
+ {t:'Subtract target 2',g:'−',f:'r₂ = y₂ − t₂',v:'1 − 1 = 0',o:'r₂',U:0,y:'sub',i:[['y₂',1],['t₂',-1]]},
+ {t:'Subtract target 3',g:'−',f:'r₃ = y₃ − t₃',v:'3 − 1 = 2',o:'r₃',U:2,y:'sub',i:[['y₃',1],['t₃',-1]]},
+ {t:'Shift by β, sample 1',g:'+',f:'y₁ = u₁ + β',v:'-2 + 1 = -1',o:'y₁',U:-1,y:'add',i:[['u₁',1],['β',1,'Addition passes gradients straight through: +1. β is shared by all three samples — this is sample 1’s share.']]},
+ {t:'Shift by β, sample 2',g:'+',f:'y₂ = u₂ + β',v:'0 + 1 = 1',o:'y₂',U:0,y:'add',i:[['u₂',1],['β',1,'Addition passes gradients straight through: +1. β is shared by all three samples — this is sample 2’s share.']]},
+ {t:'Shift by β, sample 3',g:'+',f:'y₃ = u₃ + β',v:'2 + 1 = 3',o:'y₃',U:2,y:'add',i:[['u₃',1],['β',1,'Addition passes gradients straight through: +1. β is shared by all three samples — this is sample 3’s share.']]},
+ {t:'Scale by γ, sample 1',g:'×',f:'u₁ = γ·x̂₁',v:'(2)(-1) = -2',o:'u₁',U:-1,y:'mul',i:[['γ',-1,'Local gradient = the other factor = x̂₁ = -1. γ is shared by all three samples — this is only sample 1’s share.'],['x̂₁',2]]},
+ {t:'Scale by γ, sample 2',g:'×',f:'u₂ = γ·x̂₂',v:'(2)(0) = 0',o:'u₂',U:0,y:'mul',i:[['γ',0,'Local gradient = the other factor = x̂₂ = 0. γ is shared by all three samples — this is only sample 2’s share.'],['x̂₂',2]]},
+ {t:'Scale by γ, sample 3',g:'×',f:'u₃ = γ·x̂₃',v:'(2)(1) = 2',o:'u₃',U:2,y:'mul',i:[['γ',1,'Local gradient = the other factor = x̂₃ = 1. γ is shared by all three samples — this is only sample 3’s share.'],['x̂₃',2]]},
+ {t:'Normalize, sample 1',g:'×',f:'x̂₁ = d₁·s⁻¹',v:'(-3)(1/3) = -1',o:'x̂₁',U:-2,y:'mul',i:[['d₁',1/3,'Local gradient = the other factor = s⁻¹ = 1/3.'],['s⁻¹',-3,'Local gradient = the other factor = d₁ = -3. s⁻¹ is shared by all three samples — this is only sample 1’s share.']]},
+ {t:'Normalize, sample 2',g:'×',f:'x̂₂ = d₂·s⁻¹',v:'(0)(1/3) = 0',o:'x̂₂',U:0,y:'mul',i:[['d₂',1/3,'Local gradient = the other factor = s⁻¹ = 1/3.'],['s⁻¹',0,'Local gradient = the other factor = d₂ = 0. s⁻¹ is shared by all three samples — this is only sample 2’s share.']]},
+ {t:'Normalize, sample 3',g:'×',f:'x̂₃ = d₃·s⁻¹',v:'(3)(1/3) = 1',o:'x̂₃',U:4,y:'mul',i:[['d₃',1/3,'Local gradient = the other factor = s⁻¹ = 1/3.'],['s⁻¹',3,'Local gradient = the other factor = d₃ = 3. s⁻¹ is shared by all three samples — this is only sample 3’s share.']]},
+ {t:'Reciprocal of s',g:'1/s',f:'s⁻¹ = 1/s',v:'s = 3 → s⁻¹ = 1/3',o:'s⁻¹',U:18,y:'recip',i:[['s',-1/9,'The derivative of 1/s is −1/s² = −1/9.']]},
+ {t:'Square root with ε',g:'√',f:'s = √(σ² + ε)',v:'σ² = 6, ε = 3 → s = 3',o:'s',U:-2,y:'sqrt',i:[['σ²',1/6,'d/dσ² √(σ²+ε) = 1/(2s) = 1/6.']]},
+ {t:'Mean of the squares',g:'⅓',f:'σ² = S/3',v:'S = 18 → σ² = 6',o:'σ²',U:-1/3,y:'mean',i:[['S',1/3]]},
+ {t:'Add the squared deviations',g:'+',f:'S = g₁ + g₂ + g₃',v:'9 + 0 + 9 = 18',o:'S',U:-1/9,y:'add',i:[['g₁',1],['g₂',1],['g₃',1]]},
+ {t:'Square deviation 1',g:'²',f:'g₁ = d₁²',v:'d₁ = -3 → g₁ = 9',o:'g₁',U:-1/9,y:'sq',i:[['d₁',-6,'Differentiate d₁² to get 2d₁ = -6. d₁ also reaches ℒ through the normalize step — this is only the variance path’s share.']]},
+ {t:'Square deviation 2',g:'²',f:'g₂ = d₂²',v:'d₂ = 0 → g₂ = 0',o:'g₂',U:-1/9,y:'sq',i:[['d₂',0,'Differentiate d₂² to get 2d₂ = 0. d₂ also reaches ℒ through the normalize step — this is only the variance path’s share.']]},
+ {t:'Square deviation 3',g:'²',f:'g₃ = d₃²',v:'d₃ = 3 → g₃ = 9',o:'g₃',U:-1/9,y:'sq',i:[['d₃',6,'Differentiate d₃² to get 2d₃ = 6. d₃ also reaches ℒ through the normalize step — this is only the variance path’s share.']]},
+ {t:'Centre, sample 1',g:'−',f:'d₁ = x₁ − μ',v:'1 − 4 = -3',o:'d₁',U:0,y:'sub',i:[['x₁',1],['μ',-1,'μ is subtracted: −1. μ is shared by all three samples — this is sample 1’s share.']]},
+ {t:'Centre, sample 2',g:'−',f:'d₂ = x₂ − μ',v:'4 − 4 = 0',o:'d₂',U:0,y:'sub',i:[['x₂',1],['μ',-1,'μ is subtracted: −1. μ is shared by all three samples — this is sample 2’s share.']]},
+ {t:'Centre, sample 3',g:'−',f:'d₃ = x₃ − μ',v:'7 − 4 = 3',o:'d₃',U:2/3,y:'sub',i:[['x₃',1],['μ',-1,'μ is subtracted: −1. μ is shared by all three samples — this is sample 3’s share.']]},
+ {t:'Batch mean',g:'⅓Σ',f:'μ = (x₁ + x₂ + x₃)/3',v:'(1 + 4 + 7)/3 = 4',o:'μ',U:-2/3,y:'mean',i:[['x₁',1/3,'Each input gets local gradient 1/N = 1/3. x₁ also reaches ℒ directly through its centring step — this is only the path through the mean.'],['x₂',1/3,'Each input gets local gradient 1/N = 1/3. x₂ also reaches ℒ directly through its centring step — this is only the path through the mean.'],['x₃',1/3,'Each input gets local gradient 1/N = 1/3. x₃ also reaches ℒ directly through its centring step — this is only the path through the mean.']]}
 ]}
 ];
 
@@ -294,7 +339,7 @@ const NUM=v=>{const t=String(v).trim().replace(/−/g,'-').replace(/\s+/g,'');
   if(f)return parseFloat(f[1])/parseFloat(f[2]);
   const n=parseFloat(t);return isNaN(n)?NaN:n};
 const HIT=(a,e)=>!isNaN(a)&&Math.abs(a-e)<1e-9;
-const fmt=v=>String(v);
+const fmt=v=>{for(let q=1;q<=100;q++){const p=Math.round(v*q);if(Math.abs(v-p/q)<1e-9)return q===1?String(p):p+'/'+q}return String(v)};
 
 /* ---------- router ---------- */
 const view=$('#view'),homeBtn=$('#home'),where=$('#where');
@@ -313,7 +358,8 @@ function renderIndex(){
   const done=EXS.filter((_,i)=>DB['ex'+(i+1)]?.done).length;
   where.textContent='';
   view.innerHTML=`<h1>Backward pass practice</h1>
-  <p class="lede">Ten exercises, warm-up to mini-batch. Work from the loss back to the inputs: for each node, local gradients, then upstream, then downstream. A node unlocks when the one to its right is done. Wrong answers get a hint, then the worked solution.</p>
+  <p class="lede">Eleven exercises, warm-up to batch normalization. Work from the loss back to the inputs: for each node, local gradients, then upstream, then downstream. A node unlocks when the one to its right is done. Wrong answers get a hint, then the worked solution.</p>
+  <p class="lede">New to batch norm, or want to see it first? <a href="demos.html">Open the live demos →</a> (layer drift during training, a forward pass step by step, and what happens when you move one input).</p>
   <p class="prog">${done} of ${EXS.length} complete${done===EXS.length?' — all done. 🎉':''}</p>
   <div class="grid">${EXS.map((ex,i)=>{
     const d=DB['ex'+ex.id]?.done;
@@ -400,7 +446,7 @@ function drawGraph(ex){
   givenSyms.forEach(s=>{if(C[s].some(k=>dep[k]===1))left.push(s);else float.push(s)});
   left.sort((a,b)=>C[a].reduce((x,k)=>x+y[k],0)/C[a].length-C[b].reduce((x,k)=>x+y[k],0)/C[b].length);
   const gy={};left.forEach((s,i)=>gy[s]=28+i*34);
-  let bottom=Math.max(120,...N.map(k=>y[k]+H/2+16));
+  let bottom=Math.max(120,...N.map((_,k)=>y[k]+H/2+16));
   const fl={};float.forEach(s=>{const ks=C[s];const cx=ks.reduce((a,k)=>a+X(k)+W/2,0)/ks.length;
     const cy=Math.max(...ks.map(k=>y[k]+H/2))+24;fl[s]={x:cx,y:cy};bottom=Math.max(bottom,cy+18)});
   const curve=(x1,y1,x2,y2)=>{const dx=Math.max(18,Math.abs(x2-x1)*0.5);
@@ -424,7 +470,7 @@ function drawGraph(ex){
   const gl=left.map(s=>`<circle class="gdot" cx="9" cy="${gy[s]-4}" r="2.5"/><text class="gvar" x="16" y="${gy[s]}">${s}</text>`).join('')
     +float.map(s=>`<text class="gvar" text-anchor="middle" x="${fl[s].x}" y="${fl[s].y}">${s}</text>`).join('');
   const width=termX+26;
-  return `<div class="graph"><p class="cap">How the pieces combine — given values (green, left) feed operations (boxes), flowing left to right into the loss. Boxes light up as you solve their step, backward.</p>
+  return `<div class="graph"><p class="cap">How the pieces combine — given values (left) feed operations (boxes), flowing left to right into the loss. Boxes light up as you solve their step, backward.</p>
   <svg width="${width}" height="${bottom+10}" viewBox="0 0 ${width} ${bottom+10}" role="img" aria-label="computation graph">
   <defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0L10,5L0,10z" fill="var(--line)"/></marker></defs>
   ${edges}${boxes}${labels}${gl}<text class="gterm" x="${termX}" y="${y[lossK]+6}">ℒ</text></svg></div>`;
@@ -441,6 +487,7 @@ function renderEx(i){
   <p class="lede">${esc(ex.sub)} Work from the loss back to the inputs: local gradients, then upstream, then downstream.</p>
   <div class="eq">${ex.eq}</div>
   <p class="vals">${esc(ex.vals)}</p>
+  ${ex.id===11?'<p class="lede">Want to see it move first? <a href="demos.html#bwd">Try the live demos →</a></p><div class="eq" style="text-align:left;white-space:normal;font-size:1.05rem"><b>How the 28 steps are organised.</b> Steps 1–8 are the loss, which only turns the outputs into one number to start from: halve (ℒ = ½Q), add the squared errors, square each residual, and subtract each target (rᵢ = yᵢ − tᵢ). They end with the upstream gradients gᵢ = ∂ℒ/∂yᵢ = (−1, 0, 2). Steps 9–28 are batch norm itself, from the output yᵢ back to the inputs xᵢ.</div>':''}
   ${drawGraph(ex)}
   ${d.done?`<button class="ghost" id="redo">↺ Redo this exercise</button>`:''}
   <div id="app"></div>
